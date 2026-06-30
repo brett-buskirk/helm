@@ -14,6 +14,7 @@ import { PaymentModal } from '../components/invoices/PaymentModal';
 import { useToast } from '../hooks/useToast';
 import { formatDate, formatCurrency } from '../utils/format';
 import { getEffectiveStatus } from '../utils/invoice';
+import { releaseTimeEntriesForInvoice } from '../utils/time';
 
 const STATUS_BADGE = {
   draft: { variant: 'neutral' as const, label: 'Draft' },
@@ -80,7 +81,15 @@ export default function InvoiceDetail() {
     try {
       if (!invoice || !invoice.id) return;
       await db.invoices.update(invoice.id, { status: 'cancelled', updatedAt: new Date() });
-      showToast('success', 'Invoice cancelled.');
+      // Return any time entries billed to this invoice back to unbilled so they
+      // can be re-invoiced.
+      const released = await releaseTimeEntriesForInvoice(invoice.id);
+      showToast(
+        'success',
+        released > 0
+          ? `Invoice cancelled. ${released} time ${released === 1 ? 'entry' : 'entries'} returned to unbilled.`
+          : 'Invoice cancelled.',
+      );
     } catch {
       showToast('error', 'Failed to cancel invoice.');
     } finally {
