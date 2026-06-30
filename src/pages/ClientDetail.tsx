@@ -4,7 +4,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { ArrowLeft, Plus, Briefcase, FileText, FolderOpen, Pencil, Download, Sparkles } from 'lucide-react';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import { db } from '../db';
-import type { Project, ProjectStatus, ProjectType, Invoice, InvoiceStatus, Document, DocumentType } from '../types';
+import type { Project, ProjectStatus, ProjectType, Invoice, InvoiceStatus, Document, DocumentType, Proposal, ProposalStatus } from '../types';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { Tabs } from '../components/ui/Tabs';
@@ -187,7 +187,117 @@ const PROJECT_TYPE_LABEL: Record<ProjectType, string> = {
   hourly: 'Hourly',
 };
 
-type TabKey = 'overview' | 'projects' | 'invoices' | 'documents';
+const PROPOSAL_STATUS_BADGE: Record<ProposalStatus, { variant: 'neutral' | 'info' | 'success' | 'danger'; label: string }> = {
+  draft: { variant: 'neutral', label: 'Draft' },
+  sent: { variant: 'info', label: 'Sent' },
+  accepted: { variant: 'success', label: 'Accepted' },
+  declined: { variant: 'danger', label: 'Declined' },
+};
+
+function ClientProposalsTab({ clientId }: { clientId: number }) {
+  const navigate = useNavigate();
+  const { showToast } = useToast();
+  const [deleteTarget, setDeleteTarget] = useState<Proposal | undefined>();
+  const [deleting, setDeleting] = useState(false);
+
+  const proposals = useLiveQuery(
+    () =>
+      db.proposals
+        .where('clientId')
+        .equals(clientId)
+        .toArray()
+        .then((arr) => arr.sort((a, b) => +new Date(b.updatedAt) - +new Date(a.updatedAt))),
+    [clientId],
+  ) ?? [];
+
+  async function handleDelete() {
+    if (!deleteTarget?.id) return;
+    setDeleting(true);
+    try {
+      await db.proposals.delete(deleteTarget.id);
+      showToast('success', 'Proposal deleted.');
+    } catch {
+      showToast('error', 'Delete failed.');
+    } finally {
+      setDeleting(false);
+      setDeleteTarget(undefined);
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button size="sm" onClick={() => navigate(`/proposals/new?clientId=${clientId}`)}>
+          <Plus size={14} />
+          New Proposal
+        </Button>
+      </div>
+
+      {proposals.length === 0 ? (
+        <EmptyState
+          icon={FileText}
+          title="No proposals for this client"
+          description="Create a proposal to kick off the engagement."
+          action={
+            <Button size="sm" onClick={() => navigate(`/proposals/new?clientId=${clientId}`)}>
+              <Plus size={14} />
+              New Proposal
+            </Button>
+          }
+        />
+      ) : (
+        <div className="overflow-hidden rounded-xl border border-slate-700">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-slate-700 bg-slate-800">
+                {['Title', 'Amount', 'Valid Until', 'Status', ''].map((h) => (
+                  <th key={h} className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="bg-slate-900 divide-y divide-slate-800">
+              {(proposals as Proposal[]).map((p) => {
+                const { variant, label } = PROPOSAL_STATUS_BADGE[p.status];
+                const isExpired = p.validUntil && new Date(p.validUntil as unknown as Date) < new Date();
+                return (
+                  <tr key={p.id} className="group cursor-pointer hover:bg-slate-800 transition-colors" onClick={() => navigate(`/proposals/${p.id}`)}>
+                    <td className="px-4 py-3 text-sm font-medium text-slate-100">{p.title}</td>
+                    <td className="px-4 py-3 text-sm tabular-nums font-medium text-slate-100">{formatCurrency(p.pricing)}</td>
+                    <td className="px-4 py-3 text-sm tabular-nums text-slate-500 whitespace-nowrap">
+                      {p.validUntil ? (
+                        <span className={isExpired ? 'text-red-400' : ''}>{formatDate(p.validUntil as unknown as Date)}</span>
+                      ) : '—'}
+                    </td>
+                    <td className="px-4 py-3"><Badge variant={variant}>{label}</Badge></td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                        <button onClick={() => navigate(`/proposals/${p.id}/edit`)} className="rounded p-1.5 text-slate-400 hover:bg-slate-700 hover:text-slate-100 transition-colors"><Pencil size={13} /></button>
+                        <button onClick={() => setDeleteTarget(p)} className="rounded p-1.5 text-red-500 hover:bg-red-950 hover:text-red-300 transition-colors"><FileText size={13} /></button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(undefined)}
+        onConfirm={handleDelete}
+        title="Delete Proposal"
+        message={`Delete "${deleteTarget?.title}"? This cannot be undone.`}
+        confirmLabel="Delete"
+        variant="danger"
+        loading={deleting}
+      />
+    </div>
+  );
+}
+
+type TabKey = 'overview' | 'projects' | 'invoices' | 'proposals' | 'documents';
 
 export default function ClientDetail() {
   const { id } = useParams<{ id: string }>();
@@ -334,6 +444,7 @@ export default function ClientDetail() {
     { key: 'overview', label: 'Overview' },
     { key: 'projects', label: 'Projects', count: projects.length },
     { key: 'invoices', label: 'Invoices', count: clientInvoices.length || undefined },
+    { key: 'proposals', label: 'Proposals' },
     { key: 'documents', label: 'Documents' },
   ];
 
@@ -522,6 +633,10 @@ export default function ClientDetail() {
             </div>
           )}
         </div>
+      )}
+
+      {activeTab === 'proposals' && (
+        <ClientProposalsTab clientId={clientId} />
       )}
 
       {activeTab === 'documents' && (

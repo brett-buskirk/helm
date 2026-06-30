@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Search, Users, Briefcase, FileText, FolderOpen, X } from 'lucide-react';
+import { Search, Users, Briefcase, FileText, FolderOpen, X, ClipboardList } from 'lucide-react';
 import { db } from '../../db';
 
 interface SearchResult {
@@ -26,6 +26,7 @@ export function SearchModal({ isOpen, onClose }: Props) {
   const allClients = useLiveQuery(() => db.clients.toArray()) ?? [];
   const allProjects = useLiveQuery(() => db.projects.toArray()) ?? [];
   const allInvoices = useLiveQuery(() => db.invoices.toArray()) ?? [];
+  const allProposals = useLiveQuery(() => db.proposals.toArray()) ?? [];
   const allDocuments = useLiveQuery(() => db.documents.toArray()) ?? [];
 
   const clientMap = useMemo(() => new Map(allClients.map((c) => [c.id!, c])), [allClients]);
@@ -72,6 +73,17 @@ export function SearchModal({ isOpen, onClose }: Props) {
         icon: FileText,
       }));
 
+    const proposals: SearchResult[] = allProposals
+      .filter((p) => p.title.toLowerCase().includes(q))
+      .slice(0, 4)
+      .map((p) => ({
+        id: `proposal-${p.id}`,
+        label: p.title,
+        sub: clientMap.get(p.clientId)?.company ?? 'Proposal',
+        path: `/proposals/${p.id}`,
+        icon: ClipboardList,
+      }));
+
     const documents: SearchResult[] = allDocuments
       .filter((d) => d.title.toLowerCase().includes(q))
       .slice(0, 4)
@@ -83,7 +95,7 @@ export function SearchModal({ isOpen, onClose }: Props) {
         icon: FolderOpen,
       }));
 
-    return [...clients, ...projects, ...invoices, ...documents];
+    return [...clients, ...projects, ...invoices, ...proposals, ...documents];
   }, [query, allClients, allProjects, allInvoices, allDocuments, clientMap]);
 
   // Reset on open

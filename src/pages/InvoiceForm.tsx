@@ -58,8 +58,13 @@ export default function InvoiceForm() {
 
   const isEditing = !!id;
   const preselectedClientId = searchParams.get('clientId');
+  const preselectedProposalId = searchParams.get('proposalId');
 
   const allClients = useLiveQuery(() => db.clients.orderBy('company').toArray()) ?? [];
+  const sourceProposal = useLiveQuery(
+    () => (preselectedProposalId ? db.proposals.get(Number(preselectedProposalId)) : undefined),
+    [preselectedProposalId],
+  );
   const settings = useLiveQuery(() => db.settings.limit(1).first());
   const existingInvoice = useLiveQuery<Invoice | undefined>(
     () => (isEditing ? db.invoices.get(Number(id)) : undefined),
@@ -151,6 +156,20 @@ export default function InvoiceForm() {
   // Fires on project selection only — clientProjects excluded intentionally
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEditing, watchedProjectId]);
+
+  // Pre-fill from a source proposal (Create Invoice from ProposalDetail)
+  useEffect(() => {
+    if (isEditing || !sourceProposal) return;
+    setValue('clientId', sourceProposal.clientId);
+    if (sourceProposal.projectId) setValue('projectId', sourceProposal.projectId);
+    setValue('lineItems', [
+      {
+        description: sourceProposal.title,
+        quantity: 1,
+        unitPrice: sourceProposal.pricing,
+      },
+    ]);
+  }, [isEditing, sourceProposal, setValue]);
 
   // Auto-fill invoice number and tax rate on create
   useEffect(() => {
