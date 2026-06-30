@@ -8,6 +8,7 @@ import {
   FolderOpen,
   Settings,
   Search,
+  ClipboardList,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -16,6 +17,7 @@ const NAV_ITEMS = [
   { to: '/projects', label: 'Projects', icon: Briefcase },
   { to: '/invoices', label: 'Invoices', icon: FileText },
   { to: '/expenses', label: 'Expenses', icon: Receipt },
+  { to: '/proposals', label: 'Proposals', icon: ClipboardList },
   { to: '/documents', label: 'Documents', icon: FolderOpen },
 ];
 

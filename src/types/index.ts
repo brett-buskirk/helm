@@ -43,6 +43,7 @@ export interface Proposal {
   scope: string;
   deliverables: string;
   pricing: number;
+  pricingNote?: string;
   validUntil?: Date;
   status: ProposalStatus;
   notes?: string;
