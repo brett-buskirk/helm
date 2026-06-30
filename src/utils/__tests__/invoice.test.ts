@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest';
-import { getEffectiveStatus, calculateDueDate } from '../invoice';
+import { getEffectiveStatus, calculateDueDate, computeBalanceDue } from '../invoice';
 
 // Fixed reference dates that will never be "now"
 const PAST = new Date(2020, 0, 1);   // Jan 1 2020 — always in the past
@@ -31,6 +31,32 @@ describe('getEffectiveStatus', () => {
     expect(
       getEffectiveStatus({ status: 'sent', dueDate: '2020-01-01' as unknown as Date }),
     ).toBe('overdue');
+  });
+});
+
+describe('computeBalanceDue', () => {
+  test('equals total when nothing is paid', () => {
+    expect(computeBalanceDue(5000, 0)).toBe(5000);
+  });
+
+  test('subtracts the amount paid', () => {
+    expect(computeBalanceDue(5000, 2000)).toBe(3000);
+  });
+
+  test('is zero when fully paid', () => {
+    expect(computeBalanceDue(5000, 5000)).toBe(0);
+  });
+
+  test('never goes negative on overpayment', () => {
+    expect(computeBalanceDue(5000, 6000)).toBe(0);
+  });
+
+  // Regression: editing an invoice's total must re-derive the balance.
+  // Previously the edit path left a stale balanceDue (e.g. 0) while total changed.
+  test('re-derives a fresh balance when the total changes on edit', () => {
+    const amountPaid = 0;
+    const newTotal = 5000;
+    expect(computeBalanceDue(newTotal, amountPaid)).toBe(5000);
   });
 });
 

@@ -10,6 +10,14 @@ export const PAYMENT_TERMS_OPTIONS = [
   { value: 'Net 60', label: 'Net 60', days: 60 },
 ];
 
+/**
+ * The balance-due invariant for an invoice: never negative, always the total
+ * minus what's been paid. Centralized so create/edit/payment paths agree.
+ */
+export function computeBalanceDue(total: number, amountPaid: number): number {
+  return Math.max(0, total - amountPaid);
+}
+
 /** Returns 'overdue' if sent and past due date; otherwise the stored status. */
 export function getEffectiveStatus(invoice: Pick<Invoice, 'status' | 'dueDate'>): InvoiceStatus {
   if (invoice.status === 'sent') {
