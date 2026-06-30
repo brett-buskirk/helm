@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Plus, X, Download, Upload, CheckCircle, AlertCircle } from 'lucide-react';
+import { Plus, X, Download, Upload } from 'lucide-react';
 import { db, DEFAULT_EXPENSE_CATEGORIES } from '../db';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -11,6 +11,8 @@ import { Textarea } from '../components/ui/Textarea';
 import { FormField } from '../components/ui/FormField';
 import { Modal } from '../components/ui/Modal';
 import { exportAllData, importData } from '../utils/backup';
+import { Toast } from '../components/ui/Toast';
+import { useToast } from '../hooks/useToast';
 
 const settingsSchema = z.object({
   businessName: z.string().min(1, 'Required'),
@@ -31,8 +33,6 @@ const settingsSchema = z.object({
 });
 
 type SettingsFormData = z.infer<typeof settingsSchema>;
-
-type ToastState = { type: 'success' | 'error'; message: string } | null;
 
 function SectionCard({
   title,
@@ -55,7 +55,7 @@ export default function Settings() {
   const settingsRecord = useLiveQuery(() => db.settings.limit(1).first());
   const [categories, setCategories] = useState<string[]>(DEFAULT_EXPENSE_CATEGORIES);
   const [newCategory, setNewCategory] = useState('');
-  const [toast, setToast] = useState<ToastState>(null);
+  const { toast, showToast } = useToast();
   const [saving, setSaving] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -104,11 +104,6 @@ export default function Settings() {
       setCategories(settingsRecord.expenseCategories);
     }
   }, [settingsRecord, reset]);
-
-  function showToast(type: 'success' | 'error', message: string) {
-    setToast({ type, message });
-    setTimeout(() => setToast(null), 3500);
-  }
 
   async function onSubmit(data: SettingsFormData) {
     setSaving(true);
@@ -424,25 +419,7 @@ export default function Settings() {
         </div>
       </Modal>
 
-      {/* Toast */}
-      {toast && (
-        <div
-          className={[
-            'fixed bottom-5 right-5 z-50 flex items-center gap-3 rounded-lg px-4 py-3 shadow-xl text-sm font-medium',
-            toast.type === 'success'
-              ? 'bg-emerald-900 text-emerald-100 border border-emerald-700'
-              : 'bg-red-900 text-red-100 border border-red-700',
-          ].join(' ')}
-          role="status"
-        >
-          {toast.type === 'success' ? (
-            <CheckCircle size={16} className="text-emerald-400 shrink-0" />
-          ) : (
-            <AlertCircle size={16} className="text-red-400 shrink-0" />
-          )}
-          {toast.message}
-        </div>
-      )}
+      <Toast toast={toast} />
     </div>
   );
 }
