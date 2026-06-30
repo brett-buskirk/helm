@@ -179,7 +179,7 @@ export function ClientForm({ client, isOpen, onClose, onSuccess }: ClientFormPro
               <Input id="phone" type="tel" {...register('phone')} />
             </FormField>
 
-            <FormField label="Default Rate ($/hr)" htmlFor="defaultRate" error={errors.defaultRate?.message}>
+            <FormField label="Default Hourly Rate" htmlFor="defaultRate" hint="Used for hourly projects without a specific rate" error={errors.defaultRate?.message}>
               <Input id="defaultRate" type="number" min={0} step={5} placeholder="0" {...register('defaultRate')} error={errors.defaultRate?.message} />
             </FormField>
 

@@ -11,14 +11,17 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts';
-import { Plus, FileText, TrendingUp, TrendingDown, DollarSign, AlertCircle } from 'lucide-react';
+import { Plus, FileText, TrendingUp, TrendingDown, DollarSign, AlertCircle, RefreshCw } from 'lucide-react';
 import { db } from '../db';
 import { Button } from '../components/ui/Button';
-import { formatCurrency, formatDate } from '../utils/format';
+import { Badge } from '../components/ui/Badge';
+import { formatCurrency, formatProjectRate, formatDate } from '../utils/format';
 import { getEffectiveStatus } from '../utils/invoice';
 import {
   startOfMonth,
   endOfMonth,
+  startOfQuarter,
+  endOfQuarter,
   startOfYear,
   coerceDate,
   isInPeriod,
@@ -34,12 +37,14 @@ function MetricCard({
   sub,
   accent,
   icon: Icon,
+  children,
 }: {
   label: string;
   value: string;
   sub?: string;
   accent?: 'green' | 'red' | 'indigo' | 'amber';
   icon: React.ElementType;
+  children?: React.ReactNode;
 }) {
   const valueColor = {
     green: 'text-emerald-400',
@@ -57,6 +62,7 @@ function MetricCard({
       </div>
       <p className={`mt-2 text-2xl font-bold tabular-nums ${valueColor}`}>{value}</p>
       {sub && <p className="mt-1 text-xs text-slate-500">{sub}</p>}
+      {children}
     </div>
   );
 }
@@ -68,69 +74,58 @@ export default function Dashboard() {
   const allExpenses = useLiveQuery(() => db.expenses.orderBy('date').toArray()) ?? [];
   const allInvoices = useLiveQuery(() => db.invoices.toArray()) ?? [];
   const allClients = useLiveQuery(() => db.clients.toArray()) ?? [];
+  const allProjects = useLiveQuery(() => db.projects.toArray()) ?? [];
   const settings = useLiveQuery(() => db.settings.limit(1).first());
 
-  const ownerFirstName = settings?.ownerName?.split(' ')[0] ?? 'Brett';
+  const ownerFirstName = settings?.ownerName?.split(' ')[0] ?? 'you';
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
-  // ── MTD metrics ──────────────────────────────────────────────────────────
   const now = new Date();
+
+  // ── Period ranges ─────────────────────────────────────────────────────────
   const mStart = startOfMonth(now);
   const mEnd = endOfMonth(now);
-
-  const incomeMTD = useMemo(
-    () =>
-      allPayments
-        .filter((p) => {
-          const d = coerceDate(p.date as unknown as Date);
-          return d && d >= mStart && d <= mEnd;
-        })
-        .reduce((s, p) => s + p.amount, 0),
-    [allPayments, mStart.getTime()],
-  );
-
-  const expensesMTD = useMemo(
-    () =>
-      allExpenses
-        .filter((e) => isInPeriod(e.date as unknown as Date, 'month'))
-        .reduce((s, e) => s + e.amount, 0),
-    [allExpenses],
-  );
-
-  const profitMTD = incomeMTD - expensesMTD;
-
-  // ── YTD tax set-aside ────────────────────────────────────────────────────
+  const qStart = startOfQuarter(now);
+  const qEnd = endOfQuarter(now);
   const yStart = startOfYear(now.getFullYear());
 
-  const incomeYTD = useMemo(
-    () =>
-      allPayments
-        .filter((p) => {
-          const d = coerceDate(p.date as unknown as Date);
-          return d && d >= yStart;
-        })
-        .reduce((s, p) => s + p.amount, 0),
-    [allPayments, yStart.getTime()],
-  );
+  // ── Income by period ──────────────────────────────────────────────────────
+  const { incomeMTD, incomeQTD, incomeYTD } = useMemo(() => {
+    let mtd = 0, qtd = 0, ytd = 0;
+    for (const p of allPayments) {
+      const d = coerceDate(p.date as unknown as Date);
+      if (!d) continue;
+      if (d >= yStart) ytd += p.amount;
+      if (d >= qStart && d <= qEnd) qtd += p.amount;
+      if (d >= mStart && d <= mEnd) mtd += p.amount;
+    }
+    return { incomeMTD: mtd, incomeQTD: qtd, incomeYTD: ytd };
+  }, [allPayments, mStart.getTime(), mEnd.getTime(), qStart.getTime(), qEnd.getTime(), yStart.getTime()]);
 
+  // ── Expenses MTD & YTD ────────────────────────────────────────────────────
+  const { expensesMTD, expensesYTD } = useMemo(() => {
+    let mtd = 0, ytd = 0;
+    for (const e of allExpenses) {
+      const d = coerceDate(e.date as unknown as Date);
+      if (!d) continue;
+      if (isInPeriod(d, 'month')) mtd += e.amount;
+      if (d >= yStart) ytd += e.amount;
+    }
+    return { expensesMTD: mtd, expensesYTD: ytd };
+  }, [allExpenses, yStart.getTime()]);
+
+  const profitMTD = incomeMTD - expensesMTD;
   const taxSetAsideYTD = incomeYTD * TAX_SETASIDE_RATE;
 
   // ── Invoice status ────────────────────────────────────────────────────────
   const { outstanding, overdue } = useMemo(() => {
-    let outstandingAmount = 0;
-    let outstandingCount = 0;
-    let overdueAmount = 0;
-    let overdueCount = 0;
+    let outstandingAmount = 0, outstandingCount = 0;
+    let overdueAmount = 0, overdueCount = 0;
     for (const inv of allInvoices) {
       const eff = getEffectiveStatus(inv);
-      if (eff === 'sent') {
-        outstandingAmount += inv.balanceDue;
-        outstandingCount++;
-      } else if (eff === 'overdue') {
-        overdueAmount += inv.balanceDue;
-        overdueCount++;
-      }
+      if (eff === 'sent') { outstandingAmount += inv.balanceDue; outstandingCount++; }
+      else if (eff === 'overdue') { overdueAmount += inv.balanceDue; overdueCount++; }
     }
     return {
       outstanding: { amount: outstandingAmount, count: outstandingCount },
@@ -138,33 +133,38 @@ export default function Dashboard() {
     };
   }, [allInvoices]);
 
+  // ── Active retainers ──────────────────────────────────────────────────────
+  const clientMap = useMemo(() => new Map(allClients.map((c) => [c.id!, c])), [allClients]);
+
+  const activeRetainers = useMemo(
+    () => allProjects.filter((p) => p.type === 'retainer' && p.status === 'active'),
+    [allProjects],
+  );
+
+  const totalRetainerMRR = useMemo(
+    () => activeRetainers.reduce((s, p) => s + (p.rate ?? 0), 0),
+    [activeRetainers],
+  );
+
   // ── 6-month trend chart ───────────────────────────────────────────────────
   const chartData = useMemo(() => {
     return lastNMonths(6, now).map((monthDate) => {
       const start = startOfMonth(monthDate);
       const end = endOfMonth(monthDate);
-
       const income = allPayments.reduce((s, p) => {
         const d = coerceDate(p.date as unknown as Date);
         return d && d >= start && d <= end ? s + p.amount : s;
       }, 0);
-
       const expenses = allExpenses.reduce((s, e) => {
         const d = coerceDate(e.date as unknown as Date);
         return d && d >= start && d <= end ? s + e.amount : s;
       }, 0);
-
       return { month: monthLabel(monthDate), income, expenses };
     });
   }, [allPayments, allExpenses]);
 
   // ── Recent payments ───────────────────────────────────────────────────────
-  const recentPayments = useMemo(
-    () => [...allPayments].reverse().slice(0, 5),
-    [allPayments],
-  );
-
-  const clientMap = useMemo(() => new Map(allClients.map((c) => [c.id!, c])), [allClients]);
+  const recentPayments = useMemo(() => [...allPayments].reverse().slice(0, 5), [allPayments]);
 
   const activeClients = allClients.filter((c) => c.status === 'active').length;
 
@@ -185,17 +185,35 @@ export default function Dashboard() {
         <MetricCard
           label="Income — MTD"
           value={formatCurrency(incomeMTD)}
-          sub="Payments received this month"
           icon={TrendingUp}
           accent={incomeMTD > 0 ? 'green' : undefined}
-        />
+        >
+          <div className="mt-2 space-y-0.5">
+            <div className="flex justify-between text-xs text-slate-600">
+              <span>QTD</span>
+              <span className="tabular-nums text-slate-500">{formatCurrency(incomeQTD)}</span>
+            </div>
+            <div className="flex justify-between text-xs text-slate-600">
+              <span>YTD</span>
+              <span className="tabular-nums text-slate-500">{formatCurrency(incomeYTD)}</span>
+            </div>
+          </div>
+        </MetricCard>
+
         <MetricCard
           label="Expenses — MTD"
           value={formatCurrency(expensesMTD)}
-          sub="Spending this month"
           icon={TrendingDown}
           accent={expensesMTD > 0 ? 'red' : undefined}
-        />
+        >
+          <div className="mt-2">
+            <div className="flex justify-between text-xs text-slate-600">
+              <span>YTD</span>
+              <span className="tabular-nums text-slate-500">{formatCurrency(expensesYTD)}</span>
+            </div>
+          </div>
+        </MetricCard>
+
         <MetricCard
           label="Profit — MTD"
           value={formatCurrency(profitMTD)}
@@ -203,6 +221,7 @@ export default function Dashboard() {
           icon={DollarSign}
           accent={profitMTD >= 0 ? 'green' : 'red'}
         />
+
         <MetricCard
           label="Tax Set-Aside — YTD"
           value={formatCurrency(taxSetAsideYTD)}
@@ -212,15 +231,15 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Invoice status + quick actions */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      {/* Invoice status + retainer MRR + quick actions */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-xl border border-slate-700 bg-slate-800 p-5">
           <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Outstanding</p>
           <p className="mt-2 text-2xl font-bold tabular-nums text-blue-400">
             {formatCurrency(outstanding.amount)}
           </p>
           <p className="mt-1 text-xs text-slate-500">
-            {outstanding.count} invoice{outstanding.count !== 1 ? 's' : ''} sent, awaiting payment
+            {outstanding.count} invoice{outstanding.count !== 1 ? 's' : ''} sent
           </p>
         </div>
 
@@ -234,6 +253,19 @@ export default function Dashboard() {
           </p>
           <p className="mt-1 text-xs text-slate-500">
             {overdue.count} invoice{overdue.count !== 1 ? 's' : ''} past due
+          </p>
+        </div>
+
+        <div className="rounded-xl border border-slate-700 bg-slate-800 p-5">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Retainer MRR</p>
+            <RefreshCw size={14} className="text-slate-600" />
+          </div>
+          <p className="mt-2 text-2xl font-bold tabular-nums text-indigo-400">
+            {formatCurrency(totalRetainerMRR)}
+          </p>
+          <p className="mt-1 text-xs text-slate-500">
+            {activeRetainers.length} active retainer{activeRetainers.length !== 1 ? 's' : ''}
           </p>
         </div>
 
@@ -254,6 +286,51 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* Active retainers table */}
+      {activeRetainers.length > 0 && (
+        <div>
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-400">
+            Active Retainers
+          </h2>
+          <div className="overflow-hidden rounded-xl border border-slate-700">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-slate-700 bg-slate-800">
+                  {['Client', 'Project', 'Monthly Fee', 'Started', 'Status'].map((h) => (
+                    <th key={h} className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                      {h}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800 bg-slate-900">
+                {activeRetainers.map((p) => (
+                  <tr
+                    key={p.id}
+                    className="cursor-pointer hover:bg-slate-800 transition-colors"
+                    onClick={() => navigate(`/clients/${p.clientId}`)}
+                  >
+                    <td className="px-4 py-3 text-sm text-slate-300">
+                      {clientMap.get(p.clientId)?.company ?? '—'}
+                    </td>
+                    <td className="px-4 py-3 text-sm font-medium text-slate-100">{p.name}</td>
+                    <td className="px-4 py-3 text-sm tabular-nums font-medium text-indigo-400">
+                      {formatProjectRate(p.rate, 'retainer')}
+                    </td>
+                    <td className="px-4 py-3 text-sm tabular-nums text-slate-500">
+                      {p.startDate ? formatDate(p.startDate as unknown as Date) : '—'}
+                    </td>
+                    <td className="px-4 py-3">
+                      <Badge variant="success">Active</Badge>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* 6-month chart */}
       <div className="rounded-xl border border-slate-700 bg-slate-800 p-5">
@@ -290,11 +367,7 @@ export default function Dashboard() {
               }}
               cursor={{ fill: 'rgba(99,102,241,0.08)' }}
             />
-            <Legend
-              iconType="square"
-              iconSize={8}
-              wrapperStyle={{ fontSize: 11, color: '#94a3b8' }}
-            />
+            <Legend iconType="square" iconSize={8} wrapperStyle={{ fontSize: 11, color: '#94a3b8' }} />
             <Bar dataKey="income" fill="#6366f1" radius={[3, 3, 0, 0]} name="income" />
             <Bar dataKey="expenses" fill="#f43f5e" radius={[3, 3, 0, 0]} name="expenses" />
           </BarChart>
@@ -343,7 +416,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Empty state for brand-new accounts */}
+      {/* Empty state */}
       {allPayments.length === 0 && allExpenses.length === 0 && allInvoices.length === 0 && (
         <div className="rounded-xl border border-dashed border-slate-700 p-8 text-center">
           <p className="text-sm font-medium text-slate-400">Your command center is ready.</p>

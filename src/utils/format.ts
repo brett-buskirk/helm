@@ -15,6 +15,16 @@ export function formatRate(rate: number | undefined | null): string {
   return `${formatCurrency(rate)}/hr`;
 }
 
+export function formatProjectRate(
+  rate: number | undefined | null,
+  type: 'fixed' | 'retainer' | 'hourly',
+): string {
+  if (rate == null) return '—';
+  if (type === 'hourly') return `${formatCurrency(rate)}/hr`;
+  if (type === 'retainer') return `${formatCurrency(rate)}/mo`;
+  return formatCurrency(rate);
+}
+
 /** Convert a Date to the yyyy-MM-dd string an HTML date input expects. */
 export function toDateInputValue(date: Date | string | undefined | null): string {
   if (!date) return '';

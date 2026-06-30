@@ -14,7 +14,7 @@ import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { Toast } from '../components/ui/Toast';
 import { ProjectForm } from '../components/projects/ProjectForm';
 import { useToast } from '../hooks/useToast';
-import { formatDate, formatRate } from '../utils/format';
+import { formatDate, formatProjectRate } from '../utils/format';
 
 const STATUS_BADGE: Record<ProjectStatus, { variant: 'success' | 'warning' | 'info' | 'danger'; label: string }> = {
   active: { variant: 'success', label: 'Active' },
@@ -142,8 +142,8 @@ export default function Projects() {
       header: 'Rate',
       render: (p) => {
         const client = clientMap.get(p.clientId);
-        const rate = p.rate ?? client?.defaultRate;
-        return <span className="text-slate-400 tabular-nums">{formatRate(rate)}</span>;
+        const rate = p.rate ?? (p.type === 'hourly' ? client?.defaultRate : undefined);
+        return <span className="text-slate-400 tabular-nums">{formatProjectRate(rate, p.type)}</span>;
       },
     },
     {
