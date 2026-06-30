@@ -8,6 +8,8 @@ export type DocumentType = 'msa' | 'nda' | 'sow' | 'proposal' | 'other';
 
 export interface Client {
   id?: number;
+  /** Present and true only on seeded sample data; absent on real user records. */
+  isDemo?: boolean;
   company: string;
   contactName: string;
   email: string;
@@ -23,6 +25,7 @@ export interface Client {
 
 export interface Project {
   id?: number;
+  isDemo?: boolean;
   clientId: number;
   name: string;
   type: ProjectType;
@@ -37,6 +40,7 @@ export interface Project {
 
 export interface Proposal {
   id?: number;
+  isDemo?: boolean;
   clientId: number;
   projectId?: number;
   title: string;
@@ -77,6 +81,7 @@ export interface InvoiceLineItem {
 
 export interface Invoice {
   id?: number;
+  isDemo?: boolean;
   clientId: number;
   projectId?: number;
   invoiceNumber: string;
@@ -98,6 +103,7 @@ export interface Invoice {
 
 export interface Payment {
   id?: number;
+  isDemo?: boolean;
   invoiceId: number;
   clientId: number;
   amount: number;
@@ -109,6 +115,7 @@ export interface Payment {
 
 export interface Expense {
   id?: number;
+  isDemo?: boolean;
   date: Date;
   vendor: string;
   category: string;
@@ -125,6 +132,7 @@ export interface Expense {
 
 export interface Document {
   id?: number;
+  isDemo?: boolean;
   clientId?: number;
   projectId?: number;
   type: DocumentType;
@@ -138,6 +146,7 @@ export interface Document {
 
 export interface TimeEntry {
   id?: number;
+  isDemo?: boolean;
   clientId: number;
   projectId: number;
   date: Date;
