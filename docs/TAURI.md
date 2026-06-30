@@ -73,21 +73,17 @@ needs its own checkout rather than reusing the WSL one across `\\wsl$`.
 
 ---
 
-## First-time setup: generate the app icons
+## App icons (already generated)
 
-The icon files referenced by `src-tauri/tauri.conf.json` are **generated, not
-committed**. The `tauri icon` command accepts an **SVG** directly, so just point
-it at the logo already in the repo — no need to create a PNG:
+The desktop icons are **committed** in `src-tauri/icons/` (generated from
+`public/helm-icon.svg`), so there's nothing to do before your first build.
+
+To regenerate them after changing the logo — `tauri icon` takes the SVG
+directly, no PNG needed:
 
 ```sh
 npm run tauri icon public/helm-icon.svg
 ```
-
-(`public/helm-icon.svg` is a real file in the repo — that's the actual path to
-type, not a placeholder.) This writes `32x32.png`, `128x128.png`,
-`128x128@2x.png`, `icon.icns`, and `icon.ico` into `src-tauri/icons/`.
-
-> Skipping this step makes the build fail with a missing-icon error.
 
 ---
 
