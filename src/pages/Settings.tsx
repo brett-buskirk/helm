@@ -1,0 +1,448 @@
+import { useEffect, useRef, useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { Plus, X, Download, Upload, CheckCircle, AlertCircle } from 'lucide-react';
+import { db, DEFAULT_EXPENSE_CATEGORIES } from '../db';
+import { Button } from '../components/ui/Button';
+import { Input } from '../components/ui/Input';
+import { Textarea } from '../components/ui/Textarea';
+import { FormField } from '../components/ui/FormField';
+import { Modal } from '../components/ui/Modal';
+import { exportAllData, importData } from '../utils/backup';
+
+const settingsSchema = z.object({
+  businessName: z.string().min(1, 'Required'),
+  ownerName: z.string().min(1, 'Required'),
+  ein: z.string().optional(),
+  address: z.string().min(1, 'Required'),
+  email: z.string().email('Must be a valid email'),
+  phone: z.string().optional(),
+  website: z.string().optional(),
+  paymentInstructions: z.string().min(1, 'Required'),
+  defaultRate: z.coerce.number().min(0, 'Must be a positive number'),
+  taxRate: z.coerce
+    .number()
+    .min(0, 'Must be between 0 and 100')
+    .max(100, 'Must be between 0 and 100'),
+  invoicePrefix: z.string().min(1, 'Required'),
+  invoiceNextNumber: z.coerce.number().int().min(1, 'Must be at least 1'),
+});
+
+type SettingsFormData = z.infer<typeof settingsSchema>;
+
+type ToastState = { type: 'success' | 'error'; message: string } | null;
+
+function SectionCard({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-xl border border-slate-700 bg-slate-800 p-6">
+      <h2 className="mb-5 text-sm font-semibold uppercase tracking-wider text-slate-400">
+        {title}
+      </h2>
+      {children}
+    </div>
+  );
+}
+
+export default function Settings() {
+  const settingsRecord = useLiveQuery(() => db.settings.limit(1).first());
+  const [categories, setCategories] = useState<string[]>(DEFAULT_EXPENSE_CATEGORIES);
+  const [newCategory, setNewCategory] = useState('');
+  const [toast, setToast] = useState<ToastState>(null);
+  const [saving, setSaving] = useState(false);
+  const [importModalOpen, setImportModalOpen] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const importFileRef = useRef<HTMLInputElement>(null);
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<SettingsFormData>({
+    resolver: zodResolver(settingsSchema),
+    defaultValues: {
+      businessName: '',
+      ownerName: '',
+      ein: '',
+      address: '',
+      email: '',
+      phone: '',
+      website: '',
+      paymentInstructions:
+        'Payment due within 30 days of invoice date.\nACH / wire transfer preferred. Details provided upon request.',
+      defaultRate: 0,
+      taxRate: 25,
+      invoicePrefix: 'INV-',
+      invoiceNextNumber: 1001,
+    },
+  });
+
+  useEffect(() => {
+    if (settingsRecord) {
+      reset({
+        businessName: settingsRecord.businessName,
+        ownerName: settingsRecord.ownerName,
+        ein: settingsRecord.ein ?? '',
+        address: settingsRecord.address,
+        email: settingsRecord.email,
+        phone: settingsRecord.phone ?? '',
+        website: settingsRecord.website ?? '',
+        paymentInstructions: settingsRecord.paymentInstructions,
+        defaultRate: settingsRecord.defaultRate,
+        taxRate: settingsRecord.taxRate,
+        invoicePrefix: settingsRecord.invoicePrefix,
+        invoiceNextNumber: settingsRecord.invoiceNextNumber,
+      });
+      setCategories(settingsRecord.expenseCategories);
+    }
+  }, [settingsRecord, reset]);
+
+  function showToast(type: 'success' | 'error', message: string) {
+    setToast({ type, message });
+    setTimeout(() => setToast(null), 3500);
+  }
+
+  async function onSubmit(data: SettingsFormData) {
+    setSaving(true);
+    try {
+      const payload = {
+        ...data,
+        ein: data.ein || undefined,
+        phone: data.phone || undefined,
+        website: data.website || undefined,
+        expenseCategories: categories,
+        updatedAt: new Date(),
+      };
+      if (settingsRecord?.id) {
+        await db.settings.update(settingsRecord.id, payload);
+      } else {
+        await db.settings.add(payload);
+      }
+      showToast('success', 'Settings saved.');
+    } catch {
+      showToast('error', 'Failed to save settings.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function addCategory() {
+    const trimmed = newCategory.trim();
+    if (trimmed && !categories.includes(trimmed)) {
+      setCategories((prev) => [...prev, trimmed]);
+      setNewCategory('');
+    }
+  }
+
+  function removeCategory(cat: string) {
+    setCategories((prev) => prev.filter((c) => c !== cat));
+  }
+
+  async function handleExport() {
+    try {
+      await exportAllData();
+      showToast('success', 'Backup downloaded.');
+    } catch {
+      showToast('error', 'Export failed.');
+    }
+  }
+
+  async function handleImport() {
+    const file = importFileRef.current?.files?.[0];
+    if (!file) return;
+    setImporting(true);
+    try {
+      await importData(file);
+      setImportModalOpen(false);
+      showToast('success', 'Data restored from backup.');
+    } catch {
+      showToast('error', 'Import failed — invalid backup file.');
+    } finally {
+      setImporting(false);
+      if (importFileRef.current) importFileRef.current.value = '';
+    }
+  }
+
+  return (
+    <div className="mx-auto max-w-3xl px-6 py-8">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-2xl font-semibold text-slate-100">Settings</h1>
+        <p className="mt-1 text-sm text-slate-400">
+          Business profile, invoice defaults, and data management.
+        </p>
+      </div>
+
+      <form onSubmit={handleSubmit(onSubmit)} noValidate>
+        <div className="space-y-6">
+          {/* Business Profile */}
+          <SectionCard title="Business Profile">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <FormField
+                label="Business Name"
+                htmlFor="businessName"
+                error={errors.businessName?.message}
+                required
+              >
+                <Input id="businessName" {...register('businessName')} error={errors.businessName?.message} />
+              </FormField>
+              <FormField
+                label="Owner Name"
+                htmlFor="ownerName"
+                error={errors.ownerName?.message}
+                required
+              >
+                <Input id="ownerName" {...register('ownerName')} error={errors.ownerName?.message} />
+              </FormField>
+              <FormField label="EIN / Tax ID" htmlFor="ein" hint="Optional">
+                <Input id="ein" placeholder="XX-XXXXXXX" {...register('ein')} />
+              </FormField>
+              <FormField
+                label="Business Email"
+                htmlFor="email"
+                error={errors.email?.message}
+                required
+              >
+                <Input id="email" type="email" {...register('email')} error={errors.email?.message} />
+              </FormField>
+              <FormField label="Phone" htmlFor="phone" hint="Optional">
+                <Input id="phone" type="tel" {...register('phone')} />
+              </FormField>
+              <FormField label="Website" htmlFor="website" hint="Optional">
+                <Input id="website" type="url" placeholder="https://" {...register('website')} />
+              </FormField>
+              <FormField
+                label="Address"
+                htmlFor="address"
+                error={errors.address?.message}
+                required
+                className="sm:col-span-2"
+              >
+                <Textarea
+                  id="address"
+                  rows={3}
+                  placeholder="123 Main St&#10;City, ST 00000"
+                  {...register('address')}
+                  error={errors.address?.message}
+                />
+              </FormField>
+            </div>
+          </SectionCard>
+
+          {/* Invoice Settings */}
+          <SectionCard title="Invoice Settings">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <FormField
+                label="Invoice Prefix"
+                htmlFor="invoicePrefix"
+                error={errors.invoicePrefix?.message}
+                hint='e.g. "INV-" → INV-1001'
+                required
+              >
+                <Input id="invoicePrefix" {...register('invoicePrefix')} error={errors.invoicePrefix?.message} />
+              </FormField>
+              <FormField
+                label="Next Invoice #"
+                htmlFor="invoiceNextNumber"
+                error={errors.invoiceNextNumber?.message}
+                required
+              >
+                <Input
+                  id="invoiceNextNumber"
+                  type="number"
+                  min={1}
+                  {...register('invoiceNextNumber')}
+                  error={errors.invoiceNextNumber?.message}
+                />
+              </FormField>
+            </div>
+          </SectionCard>
+
+          {/* Financial Settings */}
+          <SectionCard title="Financial Settings">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <FormField
+                label="Default Hourly Rate ($)"
+                htmlFor="defaultRate"
+                error={errors.defaultRate?.message}
+                hint="Used as fallback on new clients and projects"
+                required
+              >
+                <Input
+                  id="defaultRate"
+                  type="number"
+                  min={0}
+                  step={5}
+                  {...register('defaultRate')}
+                  error={errors.defaultRate?.message}
+                />
+              </FormField>
+              <FormField
+                label="Tax Set-aside Rate (%)"
+                htmlFor="taxRate"
+                error={errors.taxRate?.message}
+                hint="Recommended: 25–30% for self-employment tax"
+                required
+              >
+                <Input
+                  id="taxRate"
+                  type="number"
+                  min={0}
+                  max={100}
+                  step={1}
+                  {...register('taxRate')}
+                  error={errors.taxRate?.message}
+                />
+              </FormField>
+            </div>
+          </SectionCard>
+
+          {/* Payment Instructions */}
+          <SectionCard title="Payment Instructions">
+            <FormField
+              label="Invoice Payment Instructions"
+              htmlFor="paymentInstructions"
+              error={errors.paymentInstructions?.message}
+              hint="Appears at the bottom of every invoice"
+              required
+            >
+              <Textarea
+                id="paymentInstructions"
+                rows={4}
+                {...register('paymentInstructions')}
+                error={errors.paymentInstructions?.message}
+              />
+            </FormField>
+          </SectionCard>
+
+          {/* Expense Categories */}
+          <SectionCard title="Expense Categories">
+            <div className="flex flex-wrap gap-2">
+              {categories.map((cat) => (
+                <span
+                  key={cat}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-slate-600 bg-slate-700 px-3 py-1 text-xs text-slate-200"
+                >
+                  {cat}
+                  <button
+                    type="button"
+                    onClick={() => removeCategory(cat)}
+                    className="text-slate-400 hover:text-red-400 transition-colors"
+                    aria-label={`Remove ${cat}`}
+                  >
+                    <X size={12} />
+                  </button>
+                </span>
+              ))}
+            </div>
+            <div className="mt-3 flex gap-2">
+              <Input
+                value={newCategory}
+                onChange={(e) => setNewCategory(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addCategory();
+                  }
+                }}
+                placeholder="Add category…"
+                className="max-w-xs"
+              />
+              <Button type="button" variant="secondary" size="sm" onClick={addCategory}>
+                <Plus size={14} />
+                Add
+              </Button>
+            </div>
+          </SectionCard>
+
+          {/* Data & Backup */}
+          <SectionCard title="Data & Backup">
+            <p className="mb-4 text-sm text-slate-400">
+              All data is stored locally in your browser. Export a backup regularly — clearing
+              browser data will wipe it.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <Button type="button" variant="secondary" onClick={handleExport}>
+                <Download size={15} />
+                Export All Data
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setImportModalOpen(true)}
+              >
+                <Upload size={15} />
+                Import Backup
+              </Button>
+            </div>
+          </SectionCard>
+        </div>
+
+        {/* Save */}
+        <div className="mt-6 flex justify-end">
+          <Button type="submit" size="lg" loading={saving}>
+            Save Settings
+          </Button>
+        </div>
+      </form>
+
+      {/* Import confirmation modal */}
+      <Modal
+        isOpen={importModalOpen}
+        onClose={() => setImportModalOpen(false)}
+        title="Import Backup"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setImportModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="danger" onClick={handleImport} loading={importing}>
+              Replace All Data
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-slate-300">
+            This will <strong className="text-red-400">replace all existing data</strong> with
+            the contents of the backup file. This cannot be undone.
+          </p>
+          <input
+            ref={importFileRef}
+            type="file"
+            accept=".json,application/json"
+            className="block w-full text-sm text-slate-300 file:mr-3 file:rounded file:border-0 file:bg-slate-700 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-slate-100 hover:file:bg-slate-600"
+          />
+        </div>
+      </Modal>
+
+      {/* Toast */}
+      {toast && (
+        <div
+          className={[
+            'fixed bottom-5 right-5 z-50 flex items-center gap-3 rounded-lg px-4 py-3 shadow-xl text-sm font-medium',
+            toast.type === 'success'
+              ? 'bg-emerald-900 text-emerald-100 border border-emerald-700'
+              : 'bg-red-900 text-red-100 border border-red-700',
+          ].join(' ')}
+          role="status"
+        >
+          {toast.type === 'success' ? (
+            <CheckCircle size={16} className="text-emerald-400 shrink-0" />
+          ) : (
+            <AlertCircle size={16} className="text-red-400 shrink-0" />
+          )}
+          {toast.message}
+        </div>
+      )}
+    </div>
+  );
+}
