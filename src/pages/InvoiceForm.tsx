@@ -20,6 +20,7 @@ import {
   calculateDueDate,
   generateInvoiceNumber,
   incrementInvoiceNumber,
+  computeBalanceDue,
 } from '../utils/invoice';
 
 const lineItemSchema = z.object({
@@ -44,6 +45,18 @@ const schema = z.object({
 });
 
 type FormData = z.infer<typeof schema>;
+
+/**
+ * True when the line items are still the untouched default — a single empty row.
+ * Used to decide whether a project/proposal pre-fill may safely populate them
+ * without clobbering something the user has already typed.
+ */
+function lineItemsArePristine(items: FormData['lineItems'] | undefined): boolean {
+  if (!items || items.length === 0) return true;
+  if (items.length > 1) return false;
+  const [li] = items;
+  return (!li.description || li.description.trim() === '') && (!li.unitPrice || Number(li.unitPrice) === 0);
+}
 
 const TERMS_OPTIONS = [
   { value: '', label: 'Custom' },
@@ -77,6 +90,7 @@ export default function InvoiceForm() {
     handleSubmit,
     watch,
     setValue,
+    getValues,
     reset,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
@@ -139,9 +153,11 @@ export default function InvoiceForm() {
     return { subtotal: sub, taxAmount: tax, total: sub + tax };
   }, [watchedItems, watchedTaxRate]);
 
-  // Pre-fill line items when a project is selected on a new invoice
+  // Pre-fill line items when a project is selected on a new invoice — but only
+  // if the user hasn't already typed line items, so we never clobber their work.
   useEffect(() => {
     if (isEditing || !watchedProjectId) return;
+    if (!lineItemsArePristine(getValues('lineItems'))) return;
     const project = clientProjects.find((p) => p.id === Number(watchedProjectId));
     if (!project) return;
     const client = allClients.find((c) => c.id === project.clientId);
@@ -150,7 +166,7 @@ export default function InvoiceForm() {
       setValue('lineItems', [{ description: `Project Fee — ${project.name}`, quantity: 1, unitPrice: rate }]);
     } else if (project.type === 'retainer') {
       setValue('lineItems', [{ description: `Monthly Retainer — ${project.name}`, quantity: 1, unitPrice: rate }]);
-    } else {
+    } else if (rate > 0) {
       setValue('lineItems', [{ description: '', quantity: 1, unitPrice: rate }]);
     }
   // Fires on project selection only — clientProjects excluded intentionally
@@ -162,14 +178,16 @@ export default function InvoiceForm() {
     if (isEditing || !sourceProposal) return;
     setValue('clientId', sourceProposal.clientId);
     if (sourceProposal.projectId) setValue('projectId', sourceProposal.projectId);
-    setValue('lineItems', [
-      {
-        description: sourceProposal.title,
-        quantity: 1,
-        unitPrice: sourceProposal.pricing,
-      },
-    ]);
-  }, [isEditing, sourceProposal, setValue]);
+    if (lineItemsArePristine(getValues('lineItems'))) {
+      setValue('lineItems', [
+        {
+          description: sourceProposal.title,
+          quantity: 1,
+          unitPrice: sourceProposal.pricing,
+        },
+      ]);
+    }
+  }, [isEditing, sourceProposal, setValue, getValues]);
 
   // Auto-fill invoice number on create. Tax rate intentionally defaults to 0:
   // settings.taxRate is the business's self-employment set-aside, NOT a sales
@@ -241,14 +259,20 @@ export default function InvoiceForm() {
     };
 
     if (isEditing && existingInvoice?.id) {
-      await db.invoices.update(existingInvoice.id, payload);
+      // Recompute the balance from the new total so it can't drift out of sync
+      // with what's been paid. amountPaid is preserved (payments live elsewhere).
+      const amountPaid = existingInvoice.amountPaid ?? 0;
+      await db.invoices.update(existingInvoice.id, {
+        ...payload,
+        balanceDue: computeBalanceDue(tot, amountPaid),
+      });
       navigate(`/invoices/${existingInvoice.id}`);
     } else {
       const newId = await db.invoices.add({
         ...payload,
         status: 'draft',
         amountPaid: 0,
-        balanceDue: tot,
+        balanceDue: computeBalanceDue(tot, 0),
         createdAt: now,
       });
       await incrementInvoiceNumber();
