@@ -1,4 +1,30 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
   <rect width="512" height="512" rx="96" fill="#020617"/>
-  <path d="M128 160V352M128 256H384M384 160V352" stroke="#6366f1" stroke-width="48" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- 8 spokes from center through outer ring to handle tips -->
+  <g stroke="#6366f1" stroke-width="14" stroke-linecap="round">
+    <line x1="256" y1="256" x2="256" y2="51"/>
+    <line x1="256" y1="256" x2="401" y2="111"/>
+    <line x1="256" y1="256" x2="461" y2="256"/>
+    <line x1="256" y1="256" x2="401" y2="401"/>
+    <line x1="256" y1="256" x2="256" y2="461"/>
+    <line x1="256" y1="256" x2="111" y2="401"/>
+    <line x1="256" y1="256" x2="51" y2="256"/>
+    <line x1="256" y1="256" x2="111" y2="111"/>
+  </g>
+  <!-- outer rim -->
+  <circle cx="256" cy="256" r="175" stroke="#6366f1" stroke-width="16"/>
+  <!-- hub: filled circle covering spoke intersection, with center accent -->
+  <circle cx="256" cy="256" r="38" fill="#6366f1"/>
+  <circle cx="256" cy="256" r="14" fill="#020617"/>
+  <!-- handle balls at spoke tips -->
+  <g fill="#6366f1">
+    <circle cx="256" cy="51" r="14"/>
+    <circle cx="401" cy="111" r="14"/>
+    <circle cx="461" cy="256" r="14"/>
+    <circle cx="401" cy="401" r="14"/>
+    <circle cx="256" cy="461" r="14"/>
+    <circle cx="111" cy="401" r="14"/>
+    <circle cx="51" cy="256" r="14"/>
+    <circle cx="111" cy="111" r="14"/>
+  </g>
 </svg>

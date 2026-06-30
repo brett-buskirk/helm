@@ -10,6 +10,7 @@ import InvoiceForm from './pages/InvoiceForm';
 import InvoiceDetail from './pages/InvoiceDetail';
 import Expenses from './pages/Expenses';
 import Documents from './pages/Documents';
+import DocumentEditor from './pages/DocumentEditor';
 import Settings from './pages/Settings';
 
 const router = createHashRouter([
@@ -28,6 +29,8 @@ const router = createHashRouter([
       { path: 'invoices/:id/edit', element: <InvoiceForm /> },
       { path: 'expenses', element: <Expenses /> },
       { path: 'documents', element: <Documents /> },
+      { path: 'documents/new', element: <DocumentEditor /> },
+      { path: 'documents/:id/edit', element: <DocumentEditor /> },
       { path: 'settings', element: <Settings /> },
     ],
   },
