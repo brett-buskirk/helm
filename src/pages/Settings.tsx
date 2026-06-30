@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Plus, X, Download, Upload } from 'lucide-react';
+import { Plus, X, Download, Upload, Sparkles } from 'lucide-react';
 import { db, DEFAULT_EXPENSE_CATEGORIES } from '../db';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -11,6 +11,7 @@ import { Textarea } from '../components/ui/Textarea';
 import { FormField } from '../components/ui/FormField';
 import { Modal } from '../components/ui/Modal';
 import { exportAllData, importData } from '../utils/backup';
+import { loadSampleData, countDemoData } from '../utils/sampleData';
 import { Toast } from '../components/ui/Toast';
 import { useToast } from '../hooks/useToast';
 
@@ -60,6 +61,8 @@ export default function Settings() {
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [importing, setImporting] = useState(false);
   const importFileRef = useRef<HTMLInputElement>(null);
+  const [loadingSample, setLoadingSample] = useState(false);
+  const demoCount = useLiveQuery(() => countDemoData(), []) ?? 0;
 
   const {
     register,
@@ -147,6 +150,18 @@ export default function Settings() {
       showToast('success', 'Backup downloaded.');
     } catch {
       showToast('error', 'Export failed.');
+    }
+  }
+
+  async function handleLoadSample() {
+    setLoadingSample(true);
+    try {
+      await loadSampleData();
+      showToast('success', 'Sample data loaded.');
+    } catch (err) {
+      showToast('error', err instanceof Error ? err.message : 'Could not load sample data.');
+    } finally {
+      setLoadingSample(false);
     }
   }
 
@@ -377,6 +392,35 @@ export default function Settings() {
                 <Upload size={15} />
                 Import Backup
               </Button>
+            </div>
+          </SectionCard>
+
+          {/* Demo data */}
+          <SectionCard title="Demo Data">
+            <p className="mb-4 text-sm text-slate-400">
+              Load a realistic sample practice — clients, projects, proposals, invoices, expenses,
+              and time — to explore the app. Demo records are kept separate from your real data:
+              clearing them (from the sidebar button that appears) never touches anything you've
+              created.
+            </p>
+            <div className="flex flex-wrap items-center gap-3">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={handleLoadSample}
+                loading={loadingSample}
+                disabled={demoCount > 0}
+              >
+                <Sparkles size={15} />
+                Load Sample Data
+              </Button>
+              {demoCount > 0 && (
+                <span className="text-sm text-slate-400">
+                  Sample data is loaded ({demoCount} demo records). Use{' '}
+                  <span className="font-medium text-amber-400">Clear demo data</span> in the sidebar
+                  to remove it.
+                </span>
+              )}
             </div>
           </SectionCard>
         </div>

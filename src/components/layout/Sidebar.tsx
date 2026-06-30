@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { NavLink } from 'react-router';
+import { useLiveQuery } from 'dexie-react-hooks';
 import {
   LayoutDashboard,
   Users,
@@ -10,7 +12,12 @@ import {
   Search,
   ClipboardList,
   Clock,
+  Trash2,
 } from 'lucide-react';
+import { ConfirmModal } from '../ui/ConfirmModal';
+import { Toast } from '../ui/Toast';
+import { useToast } from '../../hooks/useToast';
+import { countDemoData, clearDemoData } from '../../utils/sampleData';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
@@ -28,6 +35,24 @@ interface SidebarProps {
 }
 
 export function Sidebar({ onSearchOpen }: SidebarProps) {
+  const { toast, showToast } = useToast();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [clearing, setClearing] = useState(false);
+  const demoCount = useLiveQuery(() => countDemoData(), []) ?? 0;
+
+  async function handleClearDemo() {
+    setClearing(true);
+    try {
+      const removed = await clearDemoData();
+      showToast('success', `Cleared ${removed} demo record${removed === 1 ? '' : 's'}.`);
+    } catch {
+      showToast('error', 'Failed to clear demo data.');
+    } finally {
+      setClearing(false);
+      setConfirmOpen(false);
+    }
+  }
+
   return (
     <aside className="flex h-full w-56 flex-col bg-slate-950 border-r border-slate-800">
       {/* Brand */}
@@ -88,6 +113,23 @@ export function Sidebar({ onSearchOpen }: SidebarProps) {
         </ul>
       </nav>
 
+      {/* Clear demo data — only while a sample dataset is loaded */}
+      {demoCount > 0 && (
+        <div className="px-3 pt-3 border-t border-slate-800">
+          <button
+            onClick={() => setConfirmOpen(true)}
+            className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-amber-400/90 transition-colors hover:bg-amber-950/40 hover:text-amber-300"
+            title={`${demoCount} demo records loaded`}
+          >
+            <Trash2 size={16} className="shrink-0" />
+            <span className="flex-1 text-left">Clear demo data</span>
+            <span className="rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] tabular-nums text-amber-300">
+              {demoCount}
+            </span>
+          </button>
+        </div>
+      )}
+
       {/* Settings at bottom */}
       <div className="px-3 py-3 border-t border-slate-800">
         <NavLink
@@ -105,6 +147,19 @@ export function Sidebar({ onSearchOpen }: SidebarProps) {
           Settings
         </NavLink>
       </div>
+
+      <ConfirmModal
+        isOpen={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={handleClearDemo}
+        title="Clear demo data"
+        message={`Remove all ${demoCount} sample records? This only deletes demo data — anything you've created yourself is kept.`}
+        confirmLabel="Clear demo data"
+        variant="danger"
+        loading={clearing}
+      />
+
+      <Toast toast={toast} />
     </aside>
   );
 }
