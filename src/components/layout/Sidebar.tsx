@@ -25,12 +25,18 @@ export function Sidebar() {
       <div className="flex items-center gap-3 px-5 py-5 border-b border-slate-800">
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600">
           <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
-            <path
-              d="M4 6v12M4 12H20M20 6v12"
-              stroke="white"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-            />
+            <g stroke="white" strokeWidth="1.8" strokeLinecap="round">
+              <line x1="12" y1="12" x2="12" y2="2"/>
+              <line x1="12" y1="12" x2="19.1" y2="4.9"/>
+              <line x1="12" y1="12" x2="22" y2="12"/>
+              <line x1="12" y1="12" x2="19.1" y2="19.1"/>
+              <line x1="12" y1="12" x2="12" y2="22"/>
+              <line x1="12" y1="12" x2="4.9" y2="19.1"/>
+              <line x1="12" y1="12" x2="2" y2="12"/>
+              <line x1="12" y1="12" x2="4.9" y2="4.9"/>
+            </g>
+            <circle cx="12" cy="12" r="7" stroke="white" strokeWidth="1.5"/>
+            <circle cx="12" cy="12" r="2.2" fill="white"/>
           </svg>
         </div>
         <span className="text-base font-semibold tracking-tight text-slate-100">Helm</span>

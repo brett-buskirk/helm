@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { ArrowLeft, Plus, Briefcase, FileText, FolderOpen, Pencil } from 'lucide-react';
+import { ArrowLeft, Plus, Briefcase, FileText, FolderOpen, Pencil, Download, Sparkles } from 'lucide-react';
+import { PDFDownloadLink } from '@react-pdf/renderer';
 import { db } from '../db';
-import type { Project, ProjectStatus, ProjectType, Invoice, InvoiceStatus } from '../types';
+import type { Project, ProjectStatus, ProjectType, Invoice, InvoiceStatus, Document, DocumentType } from '../types';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { Tabs } from '../components/ui/Tabs';
@@ -14,9 +15,158 @@ import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { Toast } from '../components/ui/Toast';
 import { ClientForm } from '../components/clients/ClientForm';
 import { ProjectForm } from '../components/projects/ProjectForm';
+import { DocumentPDF } from '../components/documents/DocumentPDF';
+import { GenerateDocModal } from '../components/documents/GenerateDocModal';
 import { useToast } from '../hooks/useToast';
 import { formatDate, formatCurrency, formatRate } from '../utils/format';
 import { getEffectiveStatus } from '../utils/invoice';
+
+const DOC_TYPE_LABEL: Record<DocumentType, string> = {
+  msa: 'MSA', nda: 'NDA', sow: 'SOW', proposal: 'Proposal', other: 'Other',
+};
+
+function ClientDocumentsTab({ clientId }: { clientId: number }) {
+  const navigate = useNavigate();
+  const { showToast } = useToast();
+  const [generateTarget, setGenerateTarget] = useState<Document | undefined>();
+  const [deleteTarget, setDeleteTarget] = useState<Document | undefined>();
+  const [deleting, setDeleting] = useState(false);
+  const docs = useLiveQuery(
+    () =>
+      db.documents
+        .where('clientId')
+        .equals(clientId)
+        .toArray()
+        .then((arr) => arr.sort((a, b) => +new Date(b.updatedAt) - +new Date(a.updatedAt))),
+    [clientId],
+  ) ?? [];
+  const templates = useLiveQuery(() => db.documents.where('isTemplate').equals(1).toArray()) ?? [];
+  const settings = useLiveQuery(() => db.settings.limit(1).first());
+
+  async function handleDelete() {
+    if (!deleteTarget?.id) return;
+    setDeleting(true);
+    try {
+      await db.documents.delete(deleteTarget.id);
+      showToast('success', 'Document deleted.');
+    } catch {
+      showToast('error', 'Delete failed.');
+    } finally {
+      setDeleting(false);
+      setDeleteTarget(undefined);
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex gap-2">
+          {templates.length > 0 && (
+            <Button size="sm" variant="secondary" onClick={() => navigate('/documents')}>
+              <Sparkles size={13} />
+              Generate from Template
+            </Button>
+          )}
+        </div>
+        <Button size="sm" onClick={() => navigate(`/documents/new`)}>
+          <Plus size={14} />
+          New Document
+        </Button>
+      </div>
+
+      {docs.length === 0 ? (
+        <EmptyState
+          icon={FolderOpen}
+          title="No documents for this client"
+          description="Create a document or generate one from a template."
+          action={
+            <Button size="sm" onClick={() => navigate('/documents/new')}>
+              <Plus size={14} />
+              New Document
+            </Button>
+          }
+        />
+      ) : (
+        <div className="overflow-hidden rounded-xl border border-slate-700">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-slate-700 bg-slate-800">
+                {['Type', 'Title', 'Updated', ''].map((h) => (
+                  <th key={h} className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="bg-slate-900 divide-y divide-slate-800">
+              {(docs as Document[]).map((doc) => (
+                <tr key={doc.id} className="group">
+                  <td className="px-4 py-3">
+                    <Badge variant="neutral">{DOC_TYPE_LABEL[doc.type]}</Badge>
+                  </td>
+                  <td className="px-4 py-3">
+                    <button
+                      onClick={() => navigate(`/documents/${doc.id}/edit`)}
+                      className="text-left text-sm font-medium text-slate-100 hover:text-indigo-400 transition-colors"
+                    >
+                      {doc.title}
+                    </button>
+                  </td>
+                  <td className="px-4 py-3 text-sm tabular-nums text-slate-500 whitespace-nowrap">
+                    {formatDate(doc.updatedAt as unknown as Date)}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <PDFDownloadLink
+                        document={<DocumentPDF doc={doc} settings={settings} />}
+                        fileName={`${doc.title.replace(/[^a-z0-9]/gi, '_')}.pdf`}
+                      >
+                        {({ loading }) => (
+                          <button disabled={loading} title="Download PDF" className="rounded p-1.5 text-slate-400 hover:bg-slate-700 hover:text-slate-100 transition-colors disabled:opacity-40">
+                            <Download size={13} />
+                          </button>
+                        )}
+                      </PDFDownloadLink>
+                      <button
+                        onClick={() => navigate(`/documents/${doc.id}/edit`)}
+                        className="rounded p-1.5 text-slate-400 hover:bg-slate-700 hover:text-slate-100 transition-colors"
+                      >
+                        <Pencil size={13} />
+                      </button>
+                      <button
+                        onClick={() => setDeleteTarget(doc)}
+                        className="rounded p-1.5 text-red-500 hover:bg-red-950 hover:text-red-300 transition-colors"
+                      >
+                        <FileText size={13} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {generateTarget && (
+        <GenerateDocModal
+          template={generateTarget}
+          isOpen={!!generateTarget}
+          onClose={() => setGenerateTarget(undefined)}
+          onSuccess={(msg) => showToast('success', msg)}
+        />
+      )}
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(undefined)}
+        onConfirm={handleDelete}
+        title="Delete Document"
+        message={`Delete "${deleteTarget?.title}"? This cannot be undone.`}
+        confirmLabel="Delete"
+        variant="danger"
+        loading={deleting}
+      />
+    </div>
+  );
+}
 
 const CLIENT_STATUS_BADGE = {
   lead: { variant: 'info' as const, label: 'Lead' },
@@ -375,11 +525,7 @@ export default function ClientDetail() {
       )}
 
       {activeTab === 'documents' && (
-        <EmptyState
-          icon={FolderOpen}
-          title="Documents coming in Phase 4"
-          description="Contract templates and generated documents will live here."
-        />
+        <ClientDocumentsTab clientId={clientId} />
       )}
 
       {/* Drawers & modals */}
