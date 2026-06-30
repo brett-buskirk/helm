@@ -10,6 +10,11 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['helm-icon.svg'],
+      workbox: {
+        // recharts + @react-pdf/renderer push the bundle over the 2 MB default;
+        // code-split in Phase 5 when upgrading recharts to v3
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+      },
       manifest: {
         name: 'Helm',
         short_name: 'Helm',
