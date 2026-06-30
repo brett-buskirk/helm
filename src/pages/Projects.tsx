@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Plus, Briefcase, Search } from 'lucide-react';
+import { Plus, Briefcase, Search, StickyNote } from 'lucide-react';
 import { db } from '../db';
 import type { Project, ProjectStatus } from '../types';
 import { PageHeader } from '../components/ui/PageHeader';
@@ -11,6 +11,7 @@ import { Badge } from '../components/ui/Badge';
 import { Table, type TableColumn } from '../components/ui/Table';
 import { EmptyState } from '../components/ui/EmptyState';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
+import { Modal } from '../components/ui/Modal';
 import { Toast } from '../components/ui/Toast';
 import { ProjectForm } from '../components/projects/ProjectForm';
 import { useToast } from '../hooks/useToast';
@@ -40,6 +41,7 @@ export default function Projects() {
   const [editingProject, setEditingProject] = useState<Project | undefined>();
   const [deleteTarget, setDeleteTarget] = useState<Project | undefined>();
   const [confirming, setConfirming] = useState(false);
+  const [noteProject, setNoteProject] = useState<Project | undefined>();
 
   const allProjects = useLiveQuery(() => db.projects.orderBy('name').toArray()) ?? [];
   const allClients = useLiveQuery(() => db.clients.toArray()) ?? [];
@@ -90,7 +92,24 @@ export default function Projects() {
     {
       key: 'name',
       header: 'Project',
-      render: (p) => <span className="font-medium text-slate-100">{p.name}</span>,
+      render: (p) => (
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-slate-100">{p.name}</span>
+          {p.description?.trim() && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setNoteProject(p);
+              }}
+              className="shrink-0 text-slate-500 hover:text-indigo-400 transition-colors"
+              title="View notes"
+              aria-label={`View notes for ${p.name}`}
+            >
+              <StickyNote size={14} />
+            </button>
+          )}
+        </div>
+      ),
     },
     {
       key: 'client',
@@ -253,6 +272,17 @@ export default function Projects() {
         variant="danger"
         loading={confirming}
       />
+
+      <Modal
+        isOpen={!!noteProject}
+        onClose={() => setNoteProject(undefined)}
+        title={noteProject ? `${noteProject.name} — Notes` : 'Notes'}
+        size="md"
+      >
+        <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-300">
+          {noteProject?.description}
+        </p>
+      </Modal>
 
       <Toast toast={toast} />
     </div>

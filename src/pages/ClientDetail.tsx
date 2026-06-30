@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { ArrowLeft, Plus, Briefcase, FileText, FolderOpen, Pencil, Download, Sparkles } from 'lucide-react';
+import { ArrowLeft, Plus, Briefcase, FileText, FolderOpen, Pencil, Download, Sparkles, StickyNote } from 'lucide-react';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import { db } from '../db';
 import type { Project, ProjectStatus, ProjectType, Invoice, InvoiceStatus, Document, DocumentType, Proposal, ProposalStatus } from '../types';
@@ -12,6 +12,7 @@ import { Textarea } from '../components/ui/Textarea';
 import { Table, type TableColumn } from '../components/ui/Table';
 import { EmptyState } from '../components/ui/EmptyState';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
+import { Modal } from '../components/ui/Modal';
 import { Toast } from '../components/ui/Toast';
 import { ClientForm } from '../components/clients/ClientForm';
 import { ProjectForm } from '../components/projects/ProjectForm';
@@ -310,6 +311,7 @@ export default function ClientDetail() {
   const [editingProject, setEditingProject] = useState<Project | undefined>();
   const [deleteProjectTarget, setDeleteProjectTarget] = useState<Project | undefined>();
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [noteProject, setNoteProject] = useState<Project | undefined>();
 
   const navigate = useNavigate();
   const clientId = Number(id);
@@ -382,7 +384,24 @@ export default function ClientDetail() {
     {
       key: 'name',
       header: 'Project',
-      render: (p) => <span className="font-medium text-slate-100">{p.name}</span>,
+      render: (p) => (
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-slate-100">{p.name}</span>
+          {p.description?.trim() && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setNoteProject(p);
+              }}
+              className="shrink-0 text-slate-500 hover:text-indigo-400 transition-colors"
+              title="View notes"
+              aria-label={`View notes for ${p.name}`}
+            >
+              <StickyNote size={14} />
+            </button>
+          )}
+        </div>
+      ),
     },
     {
       key: 'type',
@@ -669,6 +688,17 @@ export default function ClientDetail() {
         variant="danger"
         loading={confirmingDelete}
       />
+
+      <Modal
+        isOpen={!!noteProject}
+        onClose={() => setNoteProject(undefined)}
+        title={noteProject ? `${noteProject.name} — Notes` : 'Notes'}
+        size="md"
+      >
+        <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-300">
+          {noteProject?.description}
+        </p>
+      </Modal>
 
       <Toast toast={toast} />
     </div>
