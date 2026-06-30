@@ -100,11 +100,13 @@ default 5173 to 1420 so the Tauri webview can connect reliably; plain
 `npm run dev` now also serves on 1420.)
 
 > **WSLg: blank/white window?** WebKitGTK under WSLg sometimes fails to composite
-> via the GPU and shows an empty window. Run with software rendering:
+> via the GPU and shows an empty window. Use the WSL convenience script, which
+> sets software rendering for you:
 > ```sh
-> WEBKIT_DISABLE_DMABUF_RENDERER=1 npm run tauri:dev
+> npm run tauri:dev:wsl
 > ```
-> (On older WSLg, use `WEBKIT_DISABLE_COMPOSITING_MODE=1` instead.)
+> (Equivalent to `WEBKIT_DISABLE_DMABUF_RENDERER=1 npm run tauri:dev`. On older
+> WSLg, use `WEBKIT_DISABLE_COMPOSITING_MODE=1` instead.)
 
 ## Build installers
 
