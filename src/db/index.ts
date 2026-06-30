@@ -8,6 +8,7 @@ import type {
   Payment,
   Expense,
   Document,
+  TimeEntry,
   Settings,
 } from '../types';
 
@@ -20,6 +21,7 @@ class HelmDB extends Dexie {
   payments!: EntityTable<Payment, 'id'>;
   expenses!: EntityTable<Expense, 'id'>;
   documents!: EntityTable<Document, 'id'>;
+  timeEntries!: EntityTable<TimeEntry, 'id'>;
   settings!: EntityTable<Settings, 'id'>;
 
   constructor() {
@@ -38,6 +40,10 @@ class HelmDB extends Dexie {
     // v2: add issueDate index to invoices so orderBy('issueDate') works
     this.version(2).stores({
       invoices: '++id, clientId, projectId, invoiceNumber, status, dueDate, issueDate',
+    });
+    // v3: time tracking for hourly projects
+    this.version(3).stores({
+      timeEntries: '++id, clientId, projectId, date, billable, invoiceId',
     });
   }
 }

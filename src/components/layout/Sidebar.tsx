@@ -9,6 +9,7 @@ import {
   Settings,
   Search,
   ClipboardList,
+  Clock,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -16,6 +17,7 @@ const NAV_ITEMS = [
   { to: '/clients', label: 'Clients', icon: Users },
   { to: '/projects', label: 'Projects', icon: Briefcase },
   { to: '/invoices', label: 'Invoices', icon: FileText },
+  { to: '/time', label: 'Time', icon: Clock },
   { to: '/expenses', label: 'Expenses', icon: Receipt },
   { to: '/proposals', label: 'Proposals', icon: ClipboardList },
   { to: '/documents', label: 'Documents', icon: FolderOpen },

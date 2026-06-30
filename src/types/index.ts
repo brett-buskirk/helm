@@ -136,6 +136,20 @@ export interface Document {
   updatedAt: Date;
 }
 
+export interface TimeEntry {
+  id?: number;
+  clientId: number;
+  projectId: number;
+  date: Date;
+  hours: number;
+  description: string;
+  billable: boolean;
+  /** Set when the entry has been rolled into an invoice; absent means unbilled. */
+  invoiceId?: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface Settings {
   id?: number;
   businessName: string;

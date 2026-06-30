@@ -34,6 +34,11 @@ describe('HelmDB schema', () => {
       'projects',
       'proposals',
       'settings',
+      'timeEntries',
     ]);
+  });
+
+  test('timeEntries.where invoiceId resolves (invoiceId must be indexed)', async () => {
+    await expect(db.timeEntries.where('invoiceId').equals(1).toArray()).resolves.toEqual([]);
   });
 });
