@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router';
+import { useParams, Link, useNavigate } from 'react-router';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { ArrowLeft, Plus, Briefcase, FileText, FolderOpen, Pencil } from 'lucide-react';
 import { db } from '../db';
-import type { Project, ProjectStatus, ProjectType } from '../types';
+import type { Project, ProjectStatus, ProjectType, Invoice, InvoiceStatus } from '../types';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { Tabs } from '../components/ui/Tabs';
@@ -15,7 +15,8 @@ import { Toast } from '../components/ui/Toast';
 import { ClientForm } from '../components/clients/ClientForm';
 import { ProjectForm } from '../components/projects/ProjectForm';
 import { useToast } from '../hooks/useToast';
-import { formatDate, formatRate } from '../utils/format';
+import { formatDate, formatCurrency, formatRate } from '../utils/format';
+import { getEffectiveStatus } from '../utils/invoice';
 
 const CLIENT_STATUS_BADGE = {
   lead: { variant: 'info' as const, label: 'Lead' },
@@ -50,10 +51,15 @@ export default function ClientDetail() {
   const [deleteProjectTarget, setDeleteProjectTarget] = useState<Project | undefined>();
   const [confirmingDelete, setConfirmingDelete] = useState(false);
 
+  const navigate = useNavigate();
   const clientId = Number(id);
   const client = useLiveQuery(() => db.clients.get(clientId), [clientId]);
   const projects = useLiveQuery(
     () => db.projects.where('clientId').equals(clientId).sortBy('name'),
+    [clientId],
+  ) ?? [];
+  const clientInvoices = useLiveQuery(
+    () => db.invoices.where('clientId').equals(clientId).reverse().sortBy('issueDate'),
     [clientId],
   ) ?? [];
 
@@ -177,7 +183,7 @@ export default function ClientDetail() {
   const tabItems = [
     { key: 'overview', label: 'Overview' },
     { key: 'projects', label: 'Projects', count: projects.length },
-    { key: 'invoices', label: 'Invoices' },
+    { key: 'invoices', label: 'Invoices', count: clientInvoices.length || undefined },
     { key: 'documents', label: 'Documents' },
   ];
 
@@ -296,11 +302,76 @@ export default function ClientDetail() {
       )}
 
       {activeTab === 'invoices' && (
-        <EmptyState
-          icon={FileText}
-          title="Invoices coming in Phase 2"
-          description="You'll be able to create and track invoices linked to this client."
-        />
+        <div className="space-y-4">
+          <div className="flex justify-end">
+            <Button size="sm" onClick={() => navigate(`/invoices/new?clientId=${clientId}`)}>
+              <Plus size={14} />
+              New Invoice
+            </Button>
+          </div>
+          {clientInvoices.length === 0 ? (
+            <EmptyState
+              icon={FileText}
+              title="No invoices yet"
+              description="Create an invoice for this client to get started."
+              action={
+                <Button size="sm" onClick={() => navigate(`/invoices/new?clientId=${clientId}`)}>
+                  <Plus size={14} />
+                  New Invoice
+                </Button>
+              }
+            />
+          ) : (
+            <div className="overflow-hidden rounded-xl border border-slate-700">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-slate-700 bg-slate-800">
+                    {['Invoice #', 'Status', 'Total', 'Balance', 'Due'].map((h) => (
+                      <th key={h} className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800 bg-slate-900">
+                  {(clientInvoices as Invoice[]).map((inv) => {
+                    const eff = getEffectiveStatus(inv);
+                    const statusColor: Record<InvoiceStatus, string> = {
+                      draft: 'text-slate-400',
+                      sent: 'text-blue-400',
+                      overdue: 'text-red-400',
+                      paid: 'text-emerald-400',
+                      cancelled: 'text-slate-600',
+                    };
+                    return (
+                      <tr
+                        key={inv.id}
+                        className="cursor-pointer hover:bg-slate-800 transition-colors"
+                        onClick={() => navigate(`/invoices/${inv.id}`)}
+                      >
+                        <td className="px-4 py-3 font-mono text-sm font-medium text-slate-100">
+                          {inv.invoiceNumber}
+                        </td>
+                        <td className={`px-4 py-3 text-sm font-medium ${statusColor[eff]}`}>
+                          {eff.charAt(0).toUpperCase() + eff.slice(1)}
+                        </td>
+                        <td className="px-4 py-3 text-sm tabular-nums text-slate-200">
+                          {formatCurrency(inv.total)}
+                        </td>
+                        <td className="px-4 py-3 text-sm tabular-nums text-slate-400">
+                          {inv.balanceDue > 0 ? formatCurrency(inv.balanceDue) : '—'}
+                        </td>
+                        <td className={`px-4 py-3 text-sm tabular-nums ${eff === 'overdue' ? 'font-semibold text-red-400' : 'text-slate-400'}`}>
+                          {formatDate(inv.dueDate as unknown as Date)}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       )}
 
       {activeTab === 'documents' && (
