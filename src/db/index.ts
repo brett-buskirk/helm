@@ -35,6 +35,10 @@ class HelmDB extends Dexie {
       documents: '++id, clientId, projectId, type, isTemplate',
       settings: '++id',
     });
+    // v2: add issueDate index to invoices so orderBy('issueDate') works
+    this.version(2).stores({
+      invoices: '++id, clientId, projectId, invoiceNumber, status, dueDate, issueDate',
+    });
   }
 }
 

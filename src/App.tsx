@@ -1,5 +1,6 @@
 import { createHashRouter, RouterProvider } from 'react-router';
 import { AppLayout } from './components/layout/AppLayout';
+import ErrorPage from './pages/ErrorPage';
 import Dashboard from './pages/Dashboard';
 import Clients from './pages/Clients';
 import ClientDetail from './pages/ClientDetail';
@@ -15,6 +16,7 @@ const router = createHashRouter([
   {
     path: '/',
     element: <AppLayout />,
+    errorElement: <ErrorPage />,
     children: [
       { index: true, element: <Dashboard /> },
       { path: 'clients', element: <Clients /> },
