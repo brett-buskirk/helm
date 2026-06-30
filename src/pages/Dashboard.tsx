@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useLiveQuery } from 'dexie-react-hooks';
 import {
@@ -11,12 +11,17 @@ import {
   ResponsiveContainer,
   Legend,
 } from 'recharts';
-import { Plus, FileText, TrendingUp, TrendingDown, DollarSign, AlertCircle, RefreshCw } from 'lucide-react';
+import { Plus, FileText, TrendingUp, TrendingDown, DollarSign, AlertCircle, RefreshCw, FilePlus } from 'lucide-react';
 import { db } from '../db';
+import type { Project } from '../types';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
+import { ConfirmModal } from '../components/ui/ConfirmModal';
+import { Toast } from '../components/ui/Toast';
+import { useToast } from '../hooks/useToast';
 import { formatCurrency, formatProjectRate, formatDate } from '../utils/format';
 import { getEffectiveStatus } from '../utils/invoice';
+import { createRetainerInvoice, findRetainerInvoiceForMonth, retainerPeriodLabel } from '../utils/retainer';
 import {
   startOfMonth,
   endOfMonth,
@@ -69,6 +74,11 @@ function MetricCard({
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { toast, showToast } = useToast();
+
+  // Retainer invoice generation
+  const [generatingId, setGeneratingId] = useState<number | undefined>();
+  const [dupConfirm, setDupConfirm] = useState<Project | undefined>();
 
   const allPayments = useLiveQuery(() => db.payments.orderBy('date').toArray()) ?? [];
   const allExpenses = useLiveQuery(() => db.expenses.orderBy('date').toArray()) ?? [];
@@ -145,6 +155,33 @@ export default function Dashboard() {
     () => activeRetainers.reduce((s, p) => s + (p.rate ?? 0), 0),
     [activeRetainers],
   );
+
+  async function generate(project: Project) {
+    if (!project.id) return;
+    setGeneratingId(project.id);
+    try {
+      const invoiceId = await createRetainerInvoice(project);
+      showToast('success', `Draft invoice created for ${project.name} — ${retainerPeriodLabel(new Date())}.`);
+      navigate(`/invoices/${invoiceId}`);
+    } catch {
+      showToast('error', 'Could not generate the retainer invoice.');
+    } finally {
+      setGeneratingId(undefined);
+      setDupConfirm(undefined);
+    }
+  }
+
+  async function handleGenerateClick(project: Project) {
+    if (!project.id) return;
+    setGeneratingId(project.id);
+    const existing = await findRetainerInvoiceForMonth(project.id, new Date());
+    setGeneratingId(undefined);
+    if (existing) {
+      setDupConfirm(project);
+    } else {
+      await generate(project);
+    }
+  }
 
   // ── 6-month trend chart ───────────────────────────────────────────────────
   const chartData = useMemo(() => {
@@ -297,7 +334,7 @@ export default function Dashboard() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-slate-700 bg-slate-800">
-                  {['Client', 'Project', 'Monthly Fee', 'Started', 'Status'].map((h) => (
+                  {['Client', 'Project', 'Monthly Fee', 'Started', 'Status', ''].map((h) => (
                     <th key={h} className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
                       {h}
                     </th>
@@ -308,7 +345,7 @@ export default function Dashboard() {
                 {activeRetainers.map((p) => (
                   <tr
                     key={p.id}
-                    className="cursor-pointer hover:bg-slate-800 transition-colors"
+                    className="group cursor-pointer hover:bg-slate-800 transition-colors"
                     onClick={() => navigate(`/clients/${p.clientId}`)}
                   >
                     <td className="px-4 py-3 text-sm text-slate-300">
@@ -323,6 +360,20 @@ export default function Dashboard() {
                     </td>
                     <td className="px-4 py-3">
                       <Badge variant="success">Active</Badge>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        loading={generatingId === p.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleGenerateClick(p);
+                        }}
+                      >
+                        <FilePlus size={13} />
+                        Generate Invoice
+                      </Button>
                     </td>
                   </tr>
                 ))}
@@ -425,6 +476,20 @@ export default function Dashboard() {
           </p>
         </div>
       )}
+
+      {/* Duplicate-month confirmation */}
+      <ConfirmModal
+        isOpen={!!dupConfirm}
+        onClose={() => setDupConfirm(undefined)}
+        onConfirm={() => dupConfirm && generate(dupConfirm)}
+        title="Invoice already exists this month"
+        message={`A retainer invoice for "${dupConfirm?.name}" has already been issued in ${retainerPeriodLabel(new Date())}. Generate another anyway?`}
+        confirmLabel="Generate Anyway"
+        variant="primary"
+        loading={generatingId === dupConfirm?.id}
+      />
+
+      <Toast toast={toast} />
     </div>
   );
 }
