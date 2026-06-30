@@ -8,13 +8,27 @@ Data lives in your browser (IndexedDB via Dexie). No server, no auth, no cloud. 
 
 ```bash
 npm install
-npm run dev        # http://localhost:5173
+npm run dev        # http://localhost:1420
 ```
 
 ```bash
 npm run build      # production build → dist/
 npm run preview    # preview the production build locally
 ```
+
+## Desktop app (Tauri)
+
+Helm is also wrapped with [Tauri v2](https://v2.tauri.app) to run as a native
+desktop app. It needs a Rust toolchain and per-platform build tools — see
+**[docs/TAURI.md](docs/TAURI.md)** for setup, then:
+
+```bash
+npm run tauri:dev      # run the native app with hot-reload
+npm run tauri:build    # produce installers in src-tauri/target/release/bundle/
+```
+
+Persistence is still IndexedDB inside the webview today; an encrypted-SQLite
+(SQLCipher) migration is the planned follow-up.
 
 ## What's built
 
