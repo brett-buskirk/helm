@@ -48,7 +48,9 @@ export default function Documents() {
   const [deleting, setDeleting] = useState(false);
   const [generateTarget, setGenerateTarget] = useState<Document | undefined>();
 
-  const allDocs = useLiveQuery(() => db.documents.orderBy('updatedAt').reverse().toArray()) ?? [];
+  const allDocs = useLiveQuery(() =>
+    db.documents.toArray().then((arr) => arr.sort((a, b) => +new Date(b.updatedAt) - +new Date(a.updatedAt)))
+  ) ?? [];
   const allClients = useLiveQuery(() => db.clients.toArray()) ?? [];
   const settings = useLiveQuery(() => db.settings.limit(1).first());
 
