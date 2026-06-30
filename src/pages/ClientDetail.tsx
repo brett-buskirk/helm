@@ -18,7 +18,7 @@ import { ProjectForm } from '../components/projects/ProjectForm';
 import { DocumentPDF } from '../components/documents/DocumentPDF';
 import { GenerateDocModal } from '../components/documents/GenerateDocModal';
 import { useToast } from '../hooks/useToast';
-import { formatDate, formatCurrency, formatRate } from '../utils/format';
+import { formatDate, formatCurrency, formatRate, formatProjectRate } from '../utils/format';
 import { getEffectiveStatus } from '../utils/invoice';
 
 const DOC_TYPE_LABEL: Record<DocumentType, string> = {
@@ -304,7 +304,7 @@ export default function ClientDetail() {
     {
       key: 'rate',
       header: 'Rate',
-      render: (p) => formatRate(p.rate ?? client.defaultRate),
+      render: (p) => formatProjectRate(p.rate ?? (p.type === 'hourly' ? client.defaultRate : undefined), p.type),
       className: 'text-slate-400 tabular-nums',
     },
     {

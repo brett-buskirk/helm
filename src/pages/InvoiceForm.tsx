@@ -92,6 +92,7 @@ export default function InvoiceForm() {
   const { fields, append, remove } = useFieldArray({ control, name: 'lineItems' });
   const watchedItems = useWatch({ control, name: 'lineItems' });
   const watchedClientId = watch('clientId');
+  const watchedProjectId = watch('projectId');
   const watchedTaxRate = watch('taxRate');
   const watchedIssueDate = watch('issueDate');
   const watchedPaymentTerms = watch('paymentTerms');
@@ -105,9 +106,15 @@ export default function InvoiceForm() {
     [watchedClientId],
   ) ?? [];
 
+  const PROJECT_TYPE_SUFFIX: Record<string, string> = {
+    fixed: 'Fixed', retainer: 'Retainer', hourly: 'Hourly',
+  };
   const projectOptions = [
     { value: '', label: 'No project' },
-    ...clientProjects.map((p) => ({ value: String(p.id), label: p.name })),
+    ...clientProjects.map((p) => ({
+      value: String(p.id),
+      label: `${p.name} (${PROJECT_TYPE_SUFFIX[p.type] ?? p.type})`,
+    })),
   ];
 
   const clientOptions = [
@@ -126,6 +133,24 @@ export default function InvoiceForm() {
     const tax = (sub * rate) / 100;
     return { subtotal: sub, taxAmount: tax, total: sub + tax };
   }, [watchedItems, watchedTaxRate]);
+
+  // Pre-fill line items when a project is selected on a new invoice
+  useEffect(() => {
+    if (isEditing || !watchedProjectId) return;
+    const project = clientProjects.find((p) => p.id === Number(watchedProjectId));
+    if (!project) return;
+    const client = allClients.find((c) => c.id === project.clientId);
+    const rate = project.rate ?? (project.type === 'hourly' ? client?.defaultRate : undefined) ?? 0;
+    if (project.type === 'fixed') {
+      setValue('lineItems', [{ description: `Project Fee — ${project.name}`, quantity: 1, unitPrice: rate }]);
+    } else if (project.type === 'retainer') {
+      setValue('lineItems', [{ description: `Monthly Retainer — ${project.name}`, quantity: 1, unitPrice: rate }]);
+    } else {
+      setValue('lineItems', [{ description: '', quantity: 1, unitPrice: rate }]);
+    }
+  // Fires on project selection only — clientProjects excluded intentionally
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditing, watchedProjectId]);
 
   // Auto-fill invoice number and tax rate on create
   useEffect(() => {

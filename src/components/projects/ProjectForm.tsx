@@ -60,6 +60,7 @@ export function ProjectForm({ project, lockedClientId, isOpen, onClose, onSucces
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -126,6 +127,29 @@ export function ProjectForm({ project, lockedClientId, isOpen, onClose, onSucces
     }
     onClose();
   }
+
+  const watchedType = watch('type');
+
+  const rateConfig = {
+    fixed: {
+      label: 'Project Fee',
+      hint: 'Total fixed fee for this engagement',
+      placeholder: 'Total project price',
+    },
+    retainer: {
+      label: 'Monthly Retainer',
+      hint: 'Recurring fee billed each month',
+      placeholder: 'Monthly fee',
+    },
+    hourly: {
+      label: 'Hourly Rate',
+      hint: 'Overrides client default hourly rate',
+      placeholder: 'Leave blank to use client default',
+    },
+  } as const;
+
+  const { label: rateLabel, hint: rateHint, placeholder: ratePlaceholder } =
+    rateConfig[watchedType ?? 'fixed'];
 
   return (
     <Drawer
@@ -200,9 +224,9 @@ export function ProjectForm({ project, lockedClientId, isOpen, onClose, onSucces
             </FormField>
 
             <FormField
-              label="Rate ($/hr)"
+              label={rateLabel}
               htmlFor="rate"
-              hint="Overrides client default rate"
+              hint={rateHint}
               error={errors.rate?.message}
               className="col-span-2"
             >
@@ -210,8 +234,8 @@ export function ProjectForm({ project, lockedClientId, isOpen, onClose, onSucces
                 id="rate"
                 type="number"
                 min={0}
-                step={5}
-                placeholder="Leave blank to use client default"
+                step={watchedType === 'hourly' ? 5 : 100}
+                placeholder={ratePlaceholder}
                 {...register('rate')}
                 error={errors.rate?.message}
               />

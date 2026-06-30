@@ -7,6 +7,7 @@ import {
   Receipt,
   FolderOpen,
   Settings,
+  Search,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -18,7 +19,11 @@ const NAV_ITEMS = [
   { to: '/documents', label: 'Documents', icon: FolderOpen },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  onSearchOpen: () => void;
+}
+
+export function Sidebar({ onSearchOpen }: SidebarProps) {
   return (
     <aside className="flex h-full w-56 flex-col bg-slate-950 border-r border-slate-800">
       {/* Brand */}
@@ -42,8 +47,20 @@ export function Sidebar() {
         <span className="text-base font-semibold tracking-tight text-slate-100">Helm</span>
       </div>
 
+      {/* Search */}
+      <div className="px-3 pt-2 pb-1">
+        <button
+          onClick={onSearchOpen}
+          className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm text-slate-500 transition-colors hover:bg-slate-800 hover:text-slate-300"
+        >
+          <Search size={14} className="shrink-0" />
+          <span className="flex-1 text-left">Search</span>
+          <kbd className="hidden rounded border border-slate-700 px-1 py-0.5 text-[10px] sm:inline">⌘K</kbd>
+        </button>
+      </div>
+
       {/* Primary nav */}
-      <nav className="flex-1 overflow-y-auto px-3 py-3">
+      <nav className="flex-1 overflow-y-auto px-3 py-1">
         <ul className="space-y-0.5">
           {NAV_ITEMS.map(({ to, label, icon: Icon, end }) => (
             <li key={to}>
