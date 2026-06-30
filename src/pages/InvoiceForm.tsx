@@ -171,11 +171,13 @@ export default function InvoiceForm() {
     ]);
   }, [isEditing, sourceProposal, setValue]);
 
-  // Auto-fill invoice number and tax rate on create
+  // Auto-fill invoice number on create. Tax rate intentionally defaults to 0:
+  // settings.taxRate is the business's self-employment set-aside, NOT a sales
+  // tax to charge clients. Most US consulting services aren't sales-taxed, so
+  // the user sets a rate per-invoice only when a client is genuinely taxable.
   useEffect(() => {
     if (isEditing || settings === undefined) return;
     generateInvoiceNumber().then((num) => setValue('invoiceNumber', num));
-    if (settings) setValue('taxRate', settings.taxRate);
   }, [isEditing, settings, setValue]);
 
   // Auto-calculate due date when issue date or payment terms change (create only)
@@ -434,7 +436,12 @@ export default function InvoiceForm() {
                 <Select id="paymentTerms" options={TERMS_OPTIONS} {...register('paymentTerms')} />
               </FormField>
 
-              <FormField label="Tax Rate (%)" htmlFor="taxRate" error={errors.taxRate?.message}>
+              <FormField
+                label="Sales Tax (%)"
+                htmlFor="taxRate"
+                hint="Charged to the client. Usually 0% for consulting — not your tax set-aside."
+                error={errors.taxRate?.message}
+              >
                 <Input
                   id="taxRate"
                   type="number"
