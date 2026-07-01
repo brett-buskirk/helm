@@ -73,7 +73,7 @@ export default function InvoiceForm() {
   const preselectedClientId = searchParams.get('clientId');
   const preselectedProposalId = searchParams.get('proposalId');
 
-  const allClients = useLiveQuery(() => db.clients.orderBy('company').toArray()) ?? [];
+  const allClients = useLiveQuery(() => db.clients.toCollection().sortBy('company')) ?? [];
   const sourceProposal = useLiveQuery(
     () => (preselectedProposalId ? db.proposals.get(Number(preselectedProposalId)) : undefined),
     [preselectedProposalId],

@@ -43,7 +43,7 @@ export function TimeEntryForm({
 }: Props) {
   const isEditing = !!entry;
 
-  const allClients = useLiveQuery(() => db.clients.orderBy('company').toArray()) ?? [];
+  const allClients = useLiveQuery(() => db.clients.toCollection().sortBy('company')) ?? [];
 
   const {
     register,

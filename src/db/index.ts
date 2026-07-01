@@ -10,8 +10,10 @@ import type {
   Document,
   TimeEntry,
   ToolLink,
+  SecurityConfig,
   Settings,
 } from '../types';
+import { installEncryptionHooks } from './encryption';
 
 class HelmDB extends Dexie {
   clients!: EntityTable<Client, 'id'>;
@@ -24,6 +26,7 @@ class HelmDB extends Dexie {
   documents!: EntityTable<Document, 'id'>;
   timeEntries!: EntityTable<TimeEntry, 'id'>;
   toolLinks!: EntityTable<ToolLink, 'id'>;
+  security!: EntityTable<SecurityConfig, 'id'>;
   settings!: EntityTable<Settings, 'id'>;
 
   constructor() {
@@ -51,10 +54,21 @@ class HelmDB extends Dexie {
     this.version(4).stores({
       toolLinks: '++id, category',
     });
+    // v5: opt-in at-rest encryption. Adds the security table and drops the
+    // indexes on now-encryptable identity fields (client company/email, project
+    // name) — those are sorted/filtered in memory after the read hook decrypts.
+    this.version(5).stores({
+      clients: '++id, status',
+      projects: '++id, clientId, status, type',
+      security: '++id',
+    });
   }
 }
 
 export const db = new HelmDB();
+
+// Transparent field encryption (no-op until the user enables it).
+installEncryptionHooks(db);
 
 export const DEFAULT_EXPENSE_CATEGORIES = [
   'Software & Subscriptions',
