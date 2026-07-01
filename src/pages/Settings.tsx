@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Plus, X, Download, Upload, Sparkles, Lock, ShieldCheck, ShieldOff, Image as ImageIcon } from 'lucide-react';
+import { Plus, X, Download, Upload, Sparkles, Lock, ShieldCheck, ShieldOff, Image as ImageIcon, Github } from 'lucide-react';
 import { db, DEFAULT_EXPENSE_CATEGORIES } from '../db';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -15,6 +15,7 @@ import { loadSampleData, countDemoData } from '../utils/sampleData';
 import { isEncryptionEnabled, enableEncryption, disableEncryption } from '../db/encryption';
 import { fileToLogoDataUrl } from '../utils/image';
 import { DEFAULT_BRAND } from '../utils/pdf';
+import { validateGitHubToken } from '../utils/github';
 import { Toast } from '../components/ui/Toast';
 import { useToast } from '../hooks/useToast';
 
@@ -79,6 +80,8 @@ export default function Settings() {
   const [vaultPass, setVaultPass] = useState('');
   const [vaultPass2, setVaultPass2] = useState('');
   const [vaultBusy, setVaultBusy] = useState(false);
+  const [ghTokenInput, setGhTokenInput] = useState('');
+  const [ghBusy, setGhBusy] = useState(false);
 
   const [logo, setLogo] = useState<string | undefined>();
   const [logoBusy, setLogoBusy] = useState(false);
@@ -144,6 +147,28 @@ export default function Settings() {
       setLogoBusy(false);
       if (logoInputRef.current) logoInputRef.current.value = '';
     }
+  }
+
+  async function connectGitHub() {
+    const token = ghTokenInput.trim();
+    if (!token || !settingsRecord?.id) return;
+    setGhBusy(true);
+    try {
+      const { login } = await validateGitHubToken(token);
+      await db.settings.update(settingsRecord.id, { githubToken: token, githubUser: login, updatedAt: new Date() });
+      setGhTokenInput('');
+      showToast('success', `Connected to GitHub as @${login}.`);
+    } catch (err) {
+      showToast('error', err instanceof Error ? err.message : 'Could not connect to GitHub.');
+    } finally {
+      setGhBusy(false);
+    }
+  }
+
+  async function disconnectGitHub() {
+    if (!settingsRecord?.id) return;
+    await db.settings.update(settingsRecord.id, { githubToken: '', githubUser: '', updatedAt: new Date() });
+    showToast('success', 'GitHub disconnected.');
   }
 
   async function onSubmit(data: SettingsFormData) {
@@ -600,6 +625,68 @@ export default function Settings() {
                   Enable Encryption
                 </Button>
               </>
+            )}
+          </SectionCard>
+
+          {/* Integrations */}
+          <SectionCard title="Integrations">
+            <div className="mb-4 flex items-start gap-2">
+              <Github size={16} className="mt-0.5 shrink-0 text-slate-400" />
+              <div>
+                <p className="text-sm font-medium text-slate-200">GitHub</p>
+                <p className="text-xs text-slate-500">
+                  Optional. When connected, projects that link a GitHub repo show live open pull
+                  requests and issues. Off until you connect.
+                </p>
+              </div>
+            </div>
+
+            {settingsRecord?.githubToken ? (
+              <div className="flex items-center justify-between rounded-lg border border-slate-700 bg-slate-900 px-4 py-3">
+                <p className="text-sm text-slate-300">
+                  Connected as{' '}
+                  <span className="font-medium text-emerald-400">@{settingsRecord.githubUser}</span>
+                </p>
+                <Button type="button" variant="secondary" size="sm" onClick={disconnectGitHub}>
+                  Disconnect
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex gap-2">
+                  <input
+                    type="password"
+                    value={ghTokenInput}
+                    onChange={(e) => setGhTokenInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        void connectGitHub();
+                      }
+                    }}
+                    placeholder="GitHub personal access token"
+                    autoComplete="off"
+                    className="flex-1 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder-slate-600 outline-none focus:border-indigo-500"
+                  />
+                  <Button type="button" onClick={connectGitHub} loading={ghBusy} disabled={!ghTokenInput.trim()}>
+                    Connect
+                  </Button>
+                </div>
+                <p className="text-xs text-slate-600">
+                  Create a{' '}
+                  <a
+                    href="https://github.com/settings/tokens"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-indigo-400 hover:underline"
+                  >
+                    read-only token
+                  </a>{' '}
+                  scoped to the repos you want to see. It's stored locally
+                  {encryptionEnabled ? ' and encrypted at rest' : ''} — never sent anywhere but
+                  github.com.
+                </p>
+              </div>
             )}
           </SectionCard>
 
