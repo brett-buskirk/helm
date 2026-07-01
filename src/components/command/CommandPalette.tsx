@@ -23,6 +23,7 @@ import { db } from '../../db';
 import { exportAllData } from '../../utils/backup';
 import { isEncryptionEnabled } from '../../db/encryption';
 import * as vault from '../../utils/vault';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 
 interface PaletteItem {
   id: string;
@@ -41,6 +42,7 @@ interface Props {
 
 export function CommandPalette({ isOpen, onClose }: Props) {
   const navigate = useNavigate();
+  const trapRef = useFocusTrap<HTMLDivElement>(isOpen);
   const inputRef = useRef<HTMLInputElement>(null);
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const [query, setQuery] = useState('');
@@ -189,6 +191,10 @@ export function CommandPalette({ isOpen, onClose }: Props) {
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
 
       <div
+        ref={trapRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Command palette"
         className="relative w-full max-w-lg rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={handleKeyDown}
@@ -204,7 +210,7 @@ export function CommandPalette({ isOpen, onClose }: Props) {
             className="flex-1 bg-transparent text-sm text-slate-100 placeholder-slate-600 outline-none"
           />
           {query && (
-            <button onClick={() => setQuery('')} className="text-slate-600 hover:text-slate-400">
+            <button onClick={() => setQuery('')} aria-label="Clear search" className="text-slate-600 hover:text-slate-400">
               <X size={14} />
             </button>
           )}

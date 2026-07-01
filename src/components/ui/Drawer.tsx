@@ -1,6 +1,7 @@
 import { useEffect, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 
 interface DrawerProps {
   isOpen: boolean;
@@ -18,6 +19,7 @@ const sizeClasses = {
 };
 
 export function Drawer({ isOpen, onClose, title, children, footer, size = 'md' }: DrawerProps) {
+  const trapRef = useFocusTrap<HTMLDivElement>(isOpen);
   useEffect(() => {
     if (!isOpen) return;
     document.body.style.overflow = 'hidden';
@@ -44,9 +46,11 @@ export function Drawer({ isOpen, onClose, title, children, footer, size = 'md' }
       />
       {/* Panel */}
       <div
+        ref={trapRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="drawer-title"
+        inert={!isOpen}
         className={[
           'fixed right-0 top-0 z-50 flex h-full flex-col bg-slate-800 border-l border-slate-700 shadow-2xl',
           'transition-transform duration-300 ease-in-out',

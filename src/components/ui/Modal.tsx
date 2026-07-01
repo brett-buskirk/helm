@@ -1,6 +1,7 @@
 import { useEffect, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 
 interface ModalProps {
   isOpen: boolean;
@@ -18,6 +19,7 @@ const sizeClasses = {
 };
 
 export function Modal({ isOpen, onClose, title, children, size = 'md', footer }: ModalProps) {
+  const trapRef = useFocusTrap<HTMLDivElement>(isOpen);
   useEffect(() => {
     if (!isOpen) return;
     document.body.style.overflow = 'hidden';
@@ -46,6 +48,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md', footer }:
         aria-hidden="true"
       />
       <div
+        ref={trapRef}
         className={[
           'relative w-full rounded-xl border border-slate-700 bg-slate-850 shadow-2xl',
           'bg-slate-800',

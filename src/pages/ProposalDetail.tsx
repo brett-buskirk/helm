@@ -132,7 +132,7 @@ export default function ProposalDetail() {
             <Pencil size={14} />
             Edit
           </Button>
-          <Button variant="danger" size="sm" onClick={() => setDeleteOpen(true)}>
+          <Button variant="danger" size="sm" onClick={() => setDeleteOpen(true)} aria-label="Delete proposal">
             <Trash2 size={14} />
           </Button>
         </div>

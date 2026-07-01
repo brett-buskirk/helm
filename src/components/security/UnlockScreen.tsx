@@ -50,9 +50,16 @@ export function UnlockScreen() {
             value={passphrase}
             onChange={(e) => setPassphrase(e.target.value)}
             placeholder="Passphrase"
+            aria-label="Passphrase"
+            aria-invalid={!!error}
+            aria-describedby={error ? 'unlock-error' : undefined}
             error={error || undefined}
           />
-          {error && <p className="mt-1.5 text-sm text-red-400">{error}</p>}
+          {error && (
+            <p id="unlock-error" role="alert" className="mt-1.5 text-sm text-red-400">
+              {error}
+            </p>
+          )}
         </div>
 
         <Button type="submit" className="w-full justify-center" loading={unlocking} disabled={!passphrase}>

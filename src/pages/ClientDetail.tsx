@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { ArrowLeft, Plus, Briefcase, FileText, FolderOpen, Pencil, Download, Sparkles, StickyNote } from 'lucide-react';
+import { ArrowLeft, Plus, Briefcase, FileText, FolderOpen, Pencil, Download, Sparkles, StickyNote, Trash2 } from 'lucide-react';
 import { usePdfDownload } from '../hooks/usePdfDownload';
 import { db } from '../db';
 import type { Project, ProjectStatus, ProjectType, Invoice, InvoiceStatus, Document, DocumentType, Proposal, ProposalStatus } from '../types';
@@ -128,15 +128,17 @@ function ClientDocumentsTab({ clientId }: { clientId: number }) {
                       </button>
                       <button
                         onClick={() => navigate(`/documents/${doc.id}/edit`)}
+                        aria-label="Edit document"
                         className="rounded p-1.5 text-slate-400 hover:bg-slate-700 hover:text-slate-100 transition-colors"
                       >
                         <Pencil size={13} />
                       </button>
                       <button
                         onClick={() => setDeleteTarget(doc)}
+                        aria-label="Delete document"
                         className="rounded p-1.5 text-red-500 hover:bg-red-950 hover:text-red-300 transition-colors"
                       >
-                        <FileText size={13} />
+                        <Trash2 size={13} />
                       </button>
                     </div>
                   </td>
@@ -272,8 +274,8 @@ function ClientProposalsTab({ clientId }: { clientId: number }) {
                     <td className="px-4 py-3"><Badge variant={variant}>{label}</Badge></td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
-                        <button onClick={() => navigate(`/proposals/${p.id}/edit`)} className="rounded p-1.5 text-slate-400 hover:bg-slate-700 hover:text-slate-100 transition-colors"><Pencil size={13} /></button>
-                        <button onClick={() => setDeleteTarget(p)} className="rounded p-1.5 text-red-500 hover:bg-red-950 hover:text-red-300 transition-colors"><FileText size={13} /></button>
+                        <button onClick={() => navigate(`/proposals/${p.id}/edit`)} aria-label="Edit proposal" className="rounded p-1.5 text-slate-400 hover:bg-slate-700 hover:text-slate-100 transition-colors"><Pencil size={13} /></button>
+                        <button onClick={() => setDeleteTarget(p)} aria-label="Delete proposal" className="rounded p-1.5 text-red-500 hover:bg-red-950 hover:text-red-300 transition-colors"><Trash2 size={13} /></button>
                       </div>
                     </td>
                   </tr>
