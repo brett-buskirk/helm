@@ -1,8 +1,9 @@
 import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { Plus, Trash2 } from 'lucide-react';
 import { db } from '../../db';
 import type { Project } from '../../types';
 import { Drawer } from '../ui/Drawer';
@@ -12,6 +13,7 @@ import { Textarea } from '../ui/Textarea';
 import { Select } from '../ui/Select';
 import { FormField } from '../ui/FormField';
 import { toDateInputValue, parseDateInput } from '../../utils/format';
+import { normalizeUrl, linkHost } from '../../utils/links';
 
 const schema = z.object({
   clientId: z.coerce.number().min(1, 'Required'),
@@ -25,6 +27,7 @@ const schema = z.object({
     z.number().min(0, 'Must be 0 or more').optional(),
   ),
   description: z.string().optional(),
+  links: z.array(z.object({ label: z.string(), url: z.string() })).optional(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -61,6 +64,7 @@ export function ProjectForm({ project, lockedClientId, isOpen, onClose, onSucces
     handleSubmit,
     reset,
     watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -73,7 +77,13 @@ export function ProjectForm({ project, lockedClientId, isOpen, onClose, onSucces
       endDate: '',
       rate: undefined,
       description: '',
+      links: [],
     },
+  });
+
+  const { fields: linkFields, append: appendLink, remove: removeLink } = useFieldArray({
+    control,
+    name: 'links',
   });
 
   useEffect(() => {
@@ -89,6 +99,7 @@ export function ProjectForm({ project, lockedClientId, isOpen, onClose, onSucces
               endDate: toDateInputValue(project.endDate),
               rate: project.rate,
               description: project.description ?? '',
+              links: project.links ?? [],
             }
           : {
               clientId: lockedClientId ?? 0,
@@ -99,6 +110,7 @@ export function ProjectForm({ project, lockedClientId, isOpen, onClose, onSucces
               endDate: '',
               rate: undefined,
               description: '',
+              links: [],
             },
       );
     }
@@ -106,6 +118,10 @@ export function ProjectForm({ project, lockedClientId, isOpen, onClose, onSucces
 
   async function onSubmit(data: FormData) {
     const now = new Date();
+    // Keep only rows with a URL; default a missing label to the host.
+    const links = (data.links ?? [])
+      .filter((l) => l.url.trim())
+      .map((l) => ({ label: l.label.trim() || linkHost(l.url), url: normalizeUrl(l.url) }));
     const payload = {
       clientId: data.clientId,
       name: data.name,
@@ -115,6 +131,7 @@ export function ProjectForm({ project, lockedClientId, isOpen, onClose, onSucces
       endDate: parseDateInput(data.endDate ?? ''),
       rate: data.rate,
       description: data.description || undefined,
+      links: links.length ? links : undefined,
       updatedAt: now,
     };
 
@@ -244,6 +261,43 @@ export function ProjectForm({ project, lockedClientId, isOpen, onClose, onSucces
             <FormField label="Description" htmlFor="description" className="col-span-2">
               <Textarea id="description" rows={3} placeholder="Scope, goals, context…" {...register('description')} />
             </FormField>
+
+            {/* Links — repo, PRs, dashboards */}
+            <div className="col-span-2">
+              <div className="mb-1.5 flex items-center justify-between">
+                <label className="block text-sm font-medium text-slate-300">Links</label>
+                <button
+                  type="button"
+                  onClick={() => appendLink({ label: '', url: '' })}
+                  className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
+                >
+                  <Plus size={12} />
+                  Add link
+                </button>
+              </div>
+              {linkFields.length === 0 ? (
+                <p className="text-xs text-slate-600">
+                  Attach the repo, key PRs, or a dashboard for this engagement.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {linkFields.map((field, idx) => (
+                    <div key={field.id} className="grid grid-cols-[140px_1fr_28px] gap-2">
+                      <Input placeholder="Label (e.g. Repo)" {...register(`links.${idx}.label`)} />
+                      <Input placeholder="github.com/org/repo" {...register(`links.${idx}.url`)} />
+                      <button
+                        type="button"
+                        onClick={() => removeLink(idx)}
+                        className="flex h-[38px] items-center justify-center rounded text-slate-600 hover:text-red-400 transition-colors"
+                        aria-label="Remove link"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </form>

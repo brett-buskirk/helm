@@ -14,6 +14,7 @@ import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { Modal } from '../components/ui/Modal';
 import { Toast } from '../components/ui/Toast';
 import { ProjectForm } from '../components/projects/ProjectForm';
+import { ProjectLinks } from '../components/projects/ProjectLinks';
 import { useToast } from '../hooks/useToast';
 import { formatDate, formatProjectRate } from '../utils/format';
 
@@ -108,6 +109,7 @@ export default function Projects() {
               <StickyNote size={14} />
             </button>
           )}
+          <ProjectLinks project={p} />
         </div>
       ),
     },
