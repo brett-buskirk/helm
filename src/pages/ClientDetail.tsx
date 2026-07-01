@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { ArrowLeft, Plus, Briefcase, FileText, FolderOpen, Pencil, Download, Sparkles, StickyNote } from 'lucide-react';
-import { PDFDownloadLink } from '@react-pdf/renderer';
+import { usePdfDownload } from '../hooks/usePdfDownload';
 import { db } from '../db';
 import type { Project, ProjectStatus, ProjectType, Invoice, InvoiceStatus, Document, DocumentType, Proposal, ProposalStatus } from '../types';
 import { Badge } from '../components/ui/Badge';
@@ -30,6 +30,7 @@ const DOC_TYPE_LABEL: Record<DocumentType, string> = {
 function ClientDocumentsTab({ clientId }: { clientId: number }) {
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { download: downloadPdf, busy: pdfBusy } = usePdfDownload((msg) => showToast('error', msg));
   const [generateTarget, setGenerateTarget] = useState<Document | undefined>();
   const [deleteTarget, setDeleteTarget] = useState<Document | undefined>();
   const [deleting, setDeleting] = useState(false);
@@ -117,16 +118,14 @@ function ClientDocumentsTab({ clientId }: { clientId: number }) {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <PDFDownloadLink
-                        document={<DocumentPDF doc={doc} settings={settings} />}
-                        fileName={`${doc.title.replace(/[^a-z0-9]/gi, '_')}.pdf`}
+                      <button
+                        disabled={pdfBusy}
+                        title="Download PDF"
+                        onClick={() => downloadPdf(<DocumentPDF doc={doc} settings={settings} />, `${doc.title.replace(/[^a-z0-9]/gi, '_')}.pdf`)}
+                        className="rounded p-1.5 text-slate-400 hover:bg-slate-700 hover:text-slate-100 transition-colors disabled:opacity-40"
                       >
-                        {({ loading }) => (
-                          <button disabled={loading} title="Download PDF" className="rounded p-1.5 text-slate-400 hover:bg-slate-700 hover:text-slate-100 transition-colors disabled:opacity-40">
-                            <Download size={13} />
-                          </button>
-                        )}
-                      </PDFDownloadLink>
+                        <Download size={13} />
+                      </button>
                       <button
                         onClick={() => navigate(`/documents/${doc.id}/edit`)}
                         className="rounded p-1.5 text-slate-400 hover:bg-slate-700 hover:text-slate-100 transition-colors"

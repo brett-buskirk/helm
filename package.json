@@ -20,6 +20,8 @@
     "@hookform/resolvers": "^3.9.0",
     "@react-pdf/renderer": "^4.0.0",
     "@tauri-apps/api": "^2.0.0",
+    "@tauri-apps/plugin-dialog": "^2.7.1",
+    "@tauri-apps/plugin-fs": "^2.5.1",
     "dexie": "^4.0.8",
     "dexie-react-hooks": "^1.1.7",
     "lucide-react": "^0.460.0",

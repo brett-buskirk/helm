@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Plus, FolderOpen, Download, Sparkles, Pencil, Trash2 } from 'lucide-react';
-import { PDFDownloadLink } from '@react-pdf/renderer';
+import { usePdfDownload } from '../hooks/usePdfDownload';
 import { db } from '../db';
 import type { Document, DocumentType } from '../types';
 import { PageHeader } from '../components/ui/PageHeader';
@@ -40,6 +40,7 @@ type TabKey = 'templates' | 'documents';
 export default function Documents() {
   const navigate = useNavigate();
   const { toast, showToast } = useToast();
+  const { download: downloadPdf, busy: pdfBusy } = usePdfDownload((msg) => showToast('error', msg));
 
   const [tab, setTab] = useState<TabKey>('templates');
   const [typeFilter, setTypeFilter] = useState('');
@@ -209,20 +210,14 @@ export default function Documents() {
                           <Sparkles size={13} />
                         </button>
                       )}
-                      <PDFDownloadLink
-                        document={<DocumentPDF doc={doc} settings={settings} />}
-                        fileName={`${doc.title.replace(/[^a-z0-9]/gi, '_')}.pdf`}
+                      <button
+                        title="Download PDF"
+                        disabled={pdfBusy}
+                        onClick={() => downloadPdf(<DocumentPDF doc={doc} settings={settings} />, `${doc.title.replace(/[^a-z0-9]/gi, '_')}.pdf`)}
+                        className="rounded p-1.5 text-slate-400 hover:bg-slate-700 hover:text-slate-100 transition-colors disabled:opacity-40"
                       >
-                        {({ loading }) => (
-                          <button
-                            title="Download PDF"
-                            disabled={loading}
-                            className="rounded p-1.5 text-slate-400 hover:bg-slate-700 hover:text-slate-100 transition-colors disabled:opacity-40"
-                          >
-                            <Download size={13} />
-                          </button>
-                        )}
-                      </PDFDownloadLink>
+                        <Download size={13} />
+                      </button>
                       <button
                         onClick={() => navigate(`/documents/${doc.id}/edit`)}
                         title="Edit"
