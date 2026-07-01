@@ -14,7 +14,6 @@ import {
 } from 'recharts';
 import {
   Plus,
-  FileText,
   TrendingUp,
   TrendingDown,
   DollarSign,
@@ -35,6 +34,7 @@ import { formatCurrency, formatProjectRate, formatDate } from '../utils/format';
 import { getEffectiveStatus } from '../utils/invoice';
 import { createRetainerInvoice, findRetainerInvoiceForMonth, retainerPeriodLabel } from '../utils/retainer';
 import { topClientsByRevenue, unbilledValue } from '../utils/dashboard';
+import { GettingStarted } from '../components/onboarding/GettingStarted';
 import {
   startOfMonth,
   endOfMonth,
@@ -196,7 +196,6 @@ export default function Dashboard() {
   }, [allPayments, allExpenses]);
 
   const recentPayments = useMemo(() => [...allPayments].reverse().slice(0, 6), [allPayments]);
-  const isEmpty = allPayments.length === 0 && allExpenses.length === 0 && allInvoices.length === 0;
 
   async function generate(project: Project) {
     if (!project.id) return;
@@ -253,6 +252,9 @@ export default function Dashboard() {
           </Button>
         </div>
       </div>
+
+      {/* First-run guide — self-hides once set up or dismissed */}
+      <GettingStarted />
 
       {/* KPI row — year to date */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -473,24 +475,6 @@ export default function Dashboard() {
                 ))}
               </tbody>
             </table>
-          </div>
-        </div>
-      )}
-
-      {/* Empty state */}
-      {isEmpty && (
-        <div className="rounded-xl border border-dashed border-slate-700 p-8 text-center">
-          <p className="text-sm font-medium text-slate-400">Your command center is ready.</p>
-          <p className="mt-1 text-xs text-slate-600">
-            Add clients, create invoices, and log time — your numbers will come to life here.
-          </p>
-          <div className="mt-4 flex justify-center gap-2">
-            <Button size="sm" onClick={() => navigate('/clients')}>
-              <Plus size={14} /> Add a Client
-            </Button>
-            <Button size="sm" variant="secondary" onClick={() => navigate('/settings')}>
-              <FileText size={14} /> Load Sample Data
-            </Button>
           </div>
         </div>
       )}
