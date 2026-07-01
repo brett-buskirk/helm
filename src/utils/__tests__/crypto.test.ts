@@ -36,8 +36,12 @@ describe('encryptJSON / decryptJSON', () => {
   it('fails if the ciphertext is tampered with', async () => {
     const blob = await encryptJSON(sample, 'pw');
     const env = JSON.parse(blob);
-    // Flip a character in the base64 ciphertext
-    env.data = env.data.slice(0, -2) + (env.data.endsWith('A') ? 'B' : 'A') + '=';
+    // Flip a character in the MIDDLE of the base64 ciphertext. Tampering near the
+    // end can land on padding bits that atob ignores (a no-op on the decoded
+    // bytes); a mid-string change always alters real bytes, so GCM auth fails.
+    const i = Math.floor(env.data.length / 2);
+    const replacement = env.data[i] === 'A' ? 'B' : 'A';
+    env.data = env.data.slice(0, i) + replacement + env.data.slice(i + 1);
     await expect(decryptJSON(JSON.stringify(env), 'pw')).rejects.toThrow();
   });
 
