@@ -29,3 +29,9 @@ Thumbs.db
 # Generated/exported documents (invoices, SOWs, backups) — never committed
 *.pdf
 helm-backup-*.json
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
