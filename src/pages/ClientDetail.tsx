@@ -16,6 +16,7 @@ import { Modal } from '../components/ui/Modal';
 import { Toast } from '../components/ui/Toast';
 import { ClientForm } from '../components/clients/ClientForm';
 import { ProjectForm } from '../components/projects/ProjectForm';
+import { ProjectLinks } from '../components/projects/ProjectLinks';
 import { DocumentPDF } from '../components/documents/DocumentPDF';
 import { GenerateDocModal } from '../components/documents/GenerateDocModal';
 import { useToast } from '../hooks/useToast';
@@ -400,6 +401,7 @@ export default function ClientDetail() {
               <StickyNote size={14} />
             </button>
           )}
+          <ProjectLinks project={p} />
         </div>
       ),
     },

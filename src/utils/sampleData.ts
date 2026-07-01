@@ -206,12 +206,20 @@ export async function loadSampleData(): Promise<void> {
     ...DEMO, clientId: northwind, name: 'Observability Retainer', type: 'retainer',
     status: 'active', startDate: monthStart(3), rate: 3500,
     description: 'Ongoing platform support: Prometheus/Grafana/Loki upkeep, alert tuning, on-call runbook updates, monthly reliability review.',
+    links: [
+      { label: 'Infra repo', url: 'https://github.com/northwind-robotics/infra' },
+      { label: 'Grafana', url: 'https://grafana.northwindrobotics.com' },
+    ],
     createdAt: monthStart(3), updatedAt: daysAgo(3),
   });
   const pLumen = await insert(db.projects, {
     ...DEMO, clientId: lumen, name: 'Cloud Foundation — VPC + Terraform', type: 'fixed',
     status: 'active', startDate: monthStart(3), rate: 12000,
     description: 'Greenfield DigitalOcean VPC managed via Terraform + Ansible, hardened networking, secrets handling, and a Tailscale-only management plane.',
+    links: [
+      { label: 'Terraform repo', url: 'https://github.com/lumen-health/infra' },
+      { label: 'PR #42 — VPC firewall', url: 'https://github.com/lumen-health/infra/pull/42' },
+    ],
     createdAt: monthStart(3), updatedAt: daysAgo(12),
   });
   const pCedar = await insert(db.projects, {
@@ -254,6 +262,10 @@ export async function loadSampleData(): Promise<void> {
     ...DEMO, clientId: keystone, name: 'AI Coding Agent Governance & Enablement', type: 'fixed',
     status: 'active', startDate: monthStart(1), rate: 11000,
     description: 'Responsible AI-agent adoption: a governance policy (review, scope, secrets, attribution), AgentGate wired into CI as a merge gate, and a hands-on team training workshop.',
+    links: [
+      { label: 'App repo', url: 'https://github.com/keystone-sw/platform' },
+      { label: 'AgentGate', url: 'https://github.com/marketplace/actions/agentgate-ai-pr-guardrails' },
+    ],
     createdAt: monthStart(1), updatedAt: daysAgo(5),
   });
 

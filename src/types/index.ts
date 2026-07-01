@@ -23,6 +23,11 @@ export interface Client {
   updatedAt: Date;
 }
 
+export interface ProjectLink {
+  label: string;
+  url: string;
+}
+
 export interface Project {
   id?: number;
   isDemo?: boolean;
@@ -34,6 +39,8 @@ export interface Project {
   endDate?: Date;
   description?: string;
   rate?: number;
+  /** Repo / PR / dashboard links for the engagement. */
+  links?: ProjectLink[];
   createdAt: Date;
   updatedAt: Date;
 }
