@@ -1,55 +1,88 @@
 # Helm
 
-A local-first PWA for running a solo consulting practice — clients, projects, invoices, expenses, documents, and taxes in one connected place.
+**A local-first operating system for an independent consulting practice.**
+Clients, projects, proposals, invoices, expenses, time, taxes, and contract
+documents — in one connected place, shaped around a solo technical consultant's
+workflow.
 
-Data lives in your browser (IndexedDB via Dexie). No server, no auth, no cloud. Install it, use it offline, back it up with one click.
+Everything runs on your machine. No server, no accounts, no cloud. Install it as
+a PWA or a native desktop app, work fully offline, optionally encrypt it with a
+passphrase, and back it up with one click.
 
-## Quick start
+> Built as a daily-use tool **and** a portfolio piece: a local-first app with a
+> real relational data model, opt-in client-side encryption, PDF document
+> generation, and a command-center dashboard.
+
+---
+
+## Features
+
+**The connected hub — everything links to a client**
+- **Clients & Projects** — projects are fixed-price, retainer, or hourly; open a
+  client to see their entire history in one place.
+- **Proposals → SOW → Invoice pipeline** — draft → sent → accepted/declined, then
+  turn an accepted proposal into an invoice in one click.
+- **Invoices** — auto-calculating line items, deposits/milestones, tax, payment
+  recording, status workflow (draft/sent/paid/overdue), and PDF export.
+- **Retainers** — generate the current month's invoice for an active retainer
+  straight from the dashboard.
+- **Time tracking** — log hours against hourly projects and roll unbilled time
+  into an invoice; cancelling an invoice releases its hours again.
+- **Expenses & taxes** — categorized expenses, deductible flags, and a running
+  25% tax set-aside.
+- **Documents & templates** — a vault of MSA/NDA/SOW/Proposal templates with
+  variable substitution; generate client-specific docs and export branded PDFs.
+- **Toolbox** — customizable quick links to the tools you use (cloud consoles,
+  admin panels, dashboards, docs).
+
+**Command center**
+- A dashboard with cash-flow trends, YTD income/profit/margin, outstanding &
+  overdue, unbilled time, retainer MRR, and top clients.
+- A **⌘K command palette** — navigate anywhere and run actions from the keyboard.
+- Branding — your logo and brand color flow onto invoices, proposals, documents,
+  and the app itself.
+
+**Local-first & private**
+- Data lives in **IndexedDB** (via Dexie). Offline-capable **PWA** and a native
+  **desktop app** (Tauri).
+- **Opt-in at-rest encryption** — encrypt the live database with a passphrase
+  (tweetnacl + PBKDF2); the app locks on each load.
+- **Encrypted backups** — passphrase-protected JSON export/import (AES-256-GCM),
+  plus a plain export.
+- **Sample data** — one click loads a realistic demo practice to explore; one
+  click clears it, leaving any real data untouched.
+
+---
+
+## Quick start (web)
 
 ```bash
 npm install
 npm run dev        # http://localhost:1420
-```
-
-```bash
 npm run build      # production build → dist/
-npm run preview    # preview the production build locally
+npm run preview    # preview the production build
 ```
 
 ## Desktop app (Tauri)
 
 Helm is also wrapped with [Tauri v2](https://v2.tauri.app) to run as a native
-desktop app. It needs a Rust toolchain and per-platform build tools — see
+desktop app. It needs a Rust toolchain + per-platform build tools — see
 **[docs/TAURI.md](docs/TAURI.md)** for setup, then:
 
 ```bash
-npm run tauri:dev      # run the native app with hot-reload
-npm run tauri:build    # produce installers in src-tauri/target/release/bundle/
+npm run tauri:dev      # native app with hot-reload
+npm run tauri:build    # installers → src-tauri/target/release/bundle/
 ```
 
-Persistence is still IndexedDB inside the webview today; an encrypted-SQLite
-(SQLCipher) migration is the planned follow-up.
+## Data & security
 
-## What's built
-
-| Phase | Feature | Status |
-|---|---|---|
-| 0 | Scaffold, Dexie schema (all 9 entities), app shell, Settings, backup/restore | ✅ Done |
-| 1 | Clients (list, detail, CRUD, archive), Projects (list, CRUD) | ✅ Done |
-| 2 | Invoices — create/edit, line items, PDF export, status workflow | 🔜 Next |
-| 3 | Expenses, income ledger, tax set-aside tracker | ⬜ Planned |
-| 4 | Document/contract template vault, PDF generation per client | ⬜ Planned |
-| 5 | Dashboard (income/expense charts, overdue summary), global search, polish | ⬜ Planned |
-
-The sidebar shows all six sections. Invoices, Expenses, and Documents are stubbed — they render a placeholder until their phase ships.
-
-## Data & backup
-
-All data is stored in IndexedDB. Clearing browser storage wipes it.
-
-**Back up regularly:** Settings → Data & Backup → Export All Data. The export is a plain JSON file you can restore from the same screen.
-
-The Dexie schema is defined in full at `src/db/index.ts` — all nine tables exist from day one so later phases slot in without migrations.
+- All data is stored locally in IndexedDB — clearing browser storage wipes it, so
+  **back up regularly**: Settings → Data & Backup → Export (plain or encrypted).
+- **Encryption at rest** is opt-in (Settings → Encryption). When on, the app
+  requires your passphrase to unlock; sensitive content and identities are stored
+  as ciphertext while the structural graph stays queryable. There is **no
+  passphrase recovery** — keep a backup.
+- No telemetry, no network calls for your data.
 
 ## Tech stack
 
@@ -60,32 +93,49 @@ The Dexie schema is defined in full at `src/db/index.ts` — all nine tables exi
 | Styles | Tailwind CSS v4 |
 | Database | Dexie v4 (IndexedDB) + dexie-react-hooks |
 | Forms | react-hook-form + zod |
-| Routing | react-router v7 (hash router — works offline without a server) |
-| PDF | @react-pdf/renderer (Phase 2+) |
-| Charts | recharts (Phase 5) |
-| PWA | vite-plugin-pwa (installable, offline-capable) |
-| Icons | lucide-react |
+| Routing | react-router v7 (hash router — works offline, no server) |
+| PDF | @react-pdf/renderer |
+| Charts | recharts |
+| Crypto | Web Crypto (PBKDF2, AES-GCM) + tweetnacl (secretbox) |
+| Desktop | Tauri v2 (Rust) |
+| PWA | vite-plugin-pwa |
+| Tests | Vitest + fake-indexeddb |
 
-## Project layout
+## Project structure
 
 ```
 src/
 ├── components/
-│   ├── clients/        # ClientForm drawer
+│   ├── clients/ projects/ invoices/ proposals/
+│   ├── documents/ time/ expenses/          # feature forms & PDFs
+│   ├── command/        # ⌘K command palette
+│   ├── security/       # unlock gate + screen
 │   ├── layout/         # AppLayout, Sidebar
-│   ├── projects/       # ProjectForm drawer
-│   └── ui/             # Button, Input, Drawer, Table, Modal, Badge, Tabs, Toast, …
-├── db/                 # Dexie schema + default data
-├── hooks/              # useToast
-├── pages/              # One file per route
-├── types/              # All entity interfaces and union types
-└── utils/              # backup (export/import), format (date/currency)
+│   └── ui/             # Button, Input, Drawer, Table, Modal, …
+├── db/                 # Dexie schema + transparent encryption hooks
+├── hooks/              # useToast, usePdfDownload
+├── pages/              # one file per route
+├── types/              # entity interfaces + union types
+└── utils/              # backup, crypto, vault, savePdf, pdf, image,
+                        # format, date, invoice, retainer, time,
+                        # dashboard, links, sampleData
+src-tauri/              # Tauri (Rust) desktop wrapper
 ```
 
-## Contributing / repo workflow
+## Development
 
-- `main` is branch-protected — no direct commits.
-- Work on a feature branch, open a PR with `gh pr create`.
-- AgentGate CI runs on every PR: `secrets` and `dangerous_patterns` are hard blocks; everything else is advisory.
+```bash
+npm run test           # watch mode
+npm run test:run       # single run
+npm run check:cycles   # fail on circular imports (madge)
+```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the full policy.
+## Repo workflow
+
+- `main` is branch-protected — no direct commits. Work on a feature branch and
+  open a PR with `gh pr create`.
+- **CI** runs on every PR: type-check, circular-import check, tests, and build.
+- **AgentGate** runs on every PR: `secrets` and `dangerous_patterns` are hard
+  blocks; scope/diff/tests/deps are advisory.
+
+See **[CONTRIBUTING.md](CONTRIBUTING.md)** for the full policy.
