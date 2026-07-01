@@ -13,7 +13,6 @@ import type {
   SecurityConfig,
   Settings,
 } from '../types';
-import { installEncryptionHooks } from './encryption';
 
 class HelmDB extends Dexie {
   clients!: EntityTable<Client, 'id'>;
@@ -67,8 +66,9 @@ class HelmDB extends Dexie {
 
 export const db = new HelmDB();
 
-// Transparent field encryption (no-op until the user enables it).
-installEncryptionHooks(db);
+// Note: encryption hooks are installed from the app entry point (main.tsx) and
+// the test setup — NOT here — so this module doesn't import ./encryption, which
+// would create an import cycle (encryption.ts imports db from here). See #23.
 
 export const DEFAULT_EXPENSE_CATEGORIES = [
   'Software & Subscriptions',
