@@ -9,6 +9,7 @@ import type {
   Expense,
   Document,
   TimeEntry,
+  ToolLink,
   Settings,
 } from '../types';
 
@@ -22,6 +23,7 @@ class HelmDB extends Dexie {
   expenses!: EntityTable<Expense, 'id'>;
   documents!: EntityTable<Document, 'id'>;
   timeEntries!: EntityTable<TimeEntry, 'id'>;
+  toolLinks!: EntityTable<ToolLink, 'id'>;
   settings!: EntityTable<Settings, 'id'>;
 
   constructor() {
@@ -44,6 +46,10 @@ class HelmDB extends Dexie {
     // v3: time tracking for hourly projects
     this.version(3).stores({
       timeEntries: '++id, clientId, projectId, date, billable, invoiceId',
+    });
+    // v4: customizable dev-tool quick links (Toolbox)
+    this.version(4).stores({
+      toolLinks: '++id, category',
     });
   }
 }

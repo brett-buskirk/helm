@@ -13,6 +13,7 @@ import {
   ClipboardList,
   Clock,
   Trash2,
+  Wrench,
 } from 'lucide-react';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { Toast } from '../ui/Toast';
@@ -28,6 +29,7 @@ const NAV_ITEMS = [
   { to: '/expenses', label: 'Expenses', icon: Receipt },
   { to: '/proposals', label: 'Proposals', icon: ClipboardList },
   { to: '/documents', label: 'Documents', icon: FolderOpen },
+  { to: '/toolbox', label: 'Toolbox', icon: Wrench },
 ];
 
 interface SidebarProps {

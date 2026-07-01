@@ -35,6 +35,7 @@ describe('HelmDB schema', () => {
       'proposals',
       'settings',
       'timeEntries',
+      'toolLinks',
     ]);
   });
 
