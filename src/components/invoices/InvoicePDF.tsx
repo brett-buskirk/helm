@@ -25,7 +25,7 @@ const s = StyleSheet.create({
   band: { height: 6, marginHorizontal: -52 },
   // ── Header ───────────────────────────────────────────
   headerRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 42, marginBottom: 28 },
-  logo: { height: 40, maxWidth: 180, objectFit: 'contain', marginBottom: 8 },
+  logo: { width: 48, height: 48, objectFit: 'contain', objectPositionX: 0, marginBottom: 8 },
   logoMark: { height: 40, width: 40, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
   logoMarkText: { color: '#ffffff', fontSize: 16, fontFamily: 'Helvetica-Bold' },
   bizName: { fontSize: 15, fontFamily: 'Helvetica-Bold', marginBottom: 4 },

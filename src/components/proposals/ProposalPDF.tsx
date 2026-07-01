@@ -8,7 +8,7 @@ function makeStyles(accent: string) {
     page: { fontFamily: 'Helvetica', fontSize: 10, color: '#1e293b', paddingTop: 0, paddingBottom: 48, paddingHorizontal: 48, lineHeight: 1.5 },
     band: { height: 6, marginHorizontal: -48 },
     header: { marginTop: 42, marginBottom: 32 },
-    logo: { height: 38, maxWidth: 170, objectFit: 'contain', marginBottom: 14 },
+    logo: { width: 44, height: 44, objectFit: 'contain', objectPositionX: 0, marginBottom: 14 },
     logoMark: { height: 38, width: 38, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginBottom: 14, backgroundColor: accent },
     logoMarkText: { color: '#ffffff', fontSize: 15, fontFamily: 'Helvetica-Bold' },
     label: { fontSize: 8, fontFamily: 'Helvetica-Bold', color: accent, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 4 },

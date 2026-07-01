@@ -28,7 +28,7 @@ const s = StyleSheet.create({
     color: c.ink,
   },
   band: { height: 6, marginHorizontal: -56 },
-  logo: { height: 34, maxWidth: 160, objectFit: 'contain', marginBottom: 12 },
+  logo: { width: 40, height: 40, objectFit: 'contain', objectPositionX: 0, marginBottom: 12 },
   logoMark: { height: 34, width: 34, borderRadius: 7, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
   logoMarkText: { color: '#ffffff', fontSize: 14, fontFamily: 'Helvetica-Bold' },
   header: {
