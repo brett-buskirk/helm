@@ -41,7 +41,7 @@ export default function Clients() {
   const [deleteTarget, setDeleteTarget] = useState<Client | undefined>();
   const [confirming, setConfirming] = useState(false);
 
-  const allClients = useLiveQuery(() => db.clients.orderBy('company').toArray()) ?? [];
+  const allClients = useLiveQuery(() => db.clients.toCollection().sortBy('company')) ?? [];
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();

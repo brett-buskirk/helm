@@ -14,11 +14,14 @@ import {
   Clock,
   Trash2,
   Wrench,
+  Lock,
 } from 'lucide-react';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { Toast } from '../ui/Toast';
 import { useToast } from '../../hooks/useToast';
 import { countDemoData, clearDemoData } from '../../utils/sampleData';
+import { isEncryptionEnabled } from '../../db/encryption';
+import * as vault from '../../utils/vault';
 
 const NAV_ITEMS = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
@@ -41,6 +44,7 @@ export function Sidebar({ onSearchOpen }: SidebarProps) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [clearing, setClearing] = useState(false);
   const demoCount = useLiveQuery(() => countDemoData(), []) ?? 0;
+  const encrypted = useLiveQuery(() => isEncryptionEnabled(), []) ?? false;
 
   async function handleClearDemo() {
     setClearing(true);
@@ -128,6 +132,20 @@ export function Sidebar({ onSearchOpen }: SidebarProps) {
             <span className="rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] tabular-nums text-amber-300">
               {demoCount}
             </span>
+          </button>
+        </div>
+      )}
+
+      {/* Lock — only when encryption is on */}
+      {encrypted && (
+        <div className="px-3 pt-3 border-t border-slate-800">
+          <button
+            onClick={() => vault.clearKey()}
+            className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-slate-400 transition-colors hover:bg-slate-800 hover:text-slate-100"
+            title="Lock the app now"
+          >
+            <Lock size={16} className="shrink-0" />
+            Lock
           </button>
         </div>
       )}

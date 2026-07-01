@@ -22,7 +22,7 @@ export function GenerateDocModal({ template, isOpen, onClose, onSuccess }: Props
   const [projectId, setProjectId] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const allClients = useLiveQuery(() => db.clients.orderBy('company').toArray()) ?? [];
+  const allClients = useLiveQuery(() => db.clients.toCollection().sortBy('company')) ?? [];
   const settings = useLiveQuery(() => db.settings.limit(1).first());
 
   const clientProjects = useLiveQuery<import('../../types').Project[]>(

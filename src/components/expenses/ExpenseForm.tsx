@@ -45,7 +45,7 @@ export function ExpenseForm({ expense, isOpen, onClose, onSuccess, preselectedCl
   const isEditing = !!expense;
 
   const settings = useLiveQuery(() => db.settings.limit(1).first());
-  const allClients = useLiveQuery(() => db.clients.orderBy('company').toArray()) ?? [];
+  const allClients = useLiveQuery(() => db.clients.toCollection().sortBy('company')) ?? [];
 
   const categories = settings?.expenseCategories?.length
     ? settings.expenseCategories

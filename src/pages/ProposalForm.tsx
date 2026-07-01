@@ -50,7 +50,7 @@ export default function ProposalForm() {
   const isEditing = !!id;
   const preselectedClientId = searchParams.get('clientId');
 
-  const allClients = useLiveQuery(() => db.clients.orderBy('company').toArray()) ?? [];
+  const allClients = useLiveQuery(() => db.clients.toCollection().sortBy('company')) ?? [];
   const existingProposal = useLiveQuery(
     () => (isEditing ? db.proposals.get(Number(id)) : undefined),
     [id, isEditing],

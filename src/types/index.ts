@@ -176,6 +176,17 @@ export interface ToolLink {
   updatedAt: Date;
 }
 
+/** Singleton row holding at-rest encryption state (never itself encrypted). */
+export interface SecurityConfig {
+  id?: number;
+  enabled: boolean;
+  kdfSalt: string;
+  iterations: number;
+  /** Ciphertext of a known token; decrypting it verifies the passphrase. */
+  verifier: string;
+  updatedAt: Date;
+}
+
 export interface Settings {
   id?: number;
   businessName: string;

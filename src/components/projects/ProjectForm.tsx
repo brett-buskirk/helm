@@ -56,7 +56,7 @@ const STATUS_OPTIONS = [
 export function ProjectForm({ project, lockedClientId, isOpen, onClose, onSuccess }: ProjectFormProps) {
   const isEditing = !!project?.id;
 
-  const clients = useLiveQuery(() => db.clients.orderBy('company').toArray()) ?? [];
+  const clients = useLiveQuery(() => db.clients.toCollection().sortBy('company')) ?? [];
   const clientOptions = clients.map((c) => ({ value: String(c.id), label: c.company }));
 
   const {

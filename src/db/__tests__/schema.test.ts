@@ -33,6 +33,7 @@ describe('HelmDB schema', () => {
       'payments',
       'projects',
       'proposals',
+      'security',
       'settings',
       'timeEntries',
       'toolLinks',

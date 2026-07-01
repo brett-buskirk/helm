@@ -1,4 +1,5 @@
 import { createHashRouter, RouterProvider } from 'react-router';
+import { VaultGate } from './components/security/VaultGate';
 import { AppLayout } from './components/layout/AppLayout';
 import ErrorPage from './pages/ErrorPage';
 import Dashboard from './pages/Dashboard';
@@ -48,5 +49,9 @@ const router = createHashRouter([
 ]);
 
 export default function App() {
-  return <RouterProvider router={router} />;
+  return (
+    <VaultGate>
+      <RouterProvider router={router} />
+    </VaultGate>
+  );
 }

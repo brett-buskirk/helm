@@ -44,7 +44,7 @@ export default function Projects() {
   const [confirming, setConfirming] = useState(false);
   const [noteProject, setNoteProject] = useState<Project | undefined>();
 
-  const allProjects = useLiveQuery(() => db.projects.orderBy('name').toArray()) ?? [];
+  const allProjects = useLiveQuery(() => db.projects.toCollection().sortBy('name')) ?? [];
   const allClients = useLiveQuery(() => db.clients.toArray()) ?? [];
 
   const clientMap = useMemo(

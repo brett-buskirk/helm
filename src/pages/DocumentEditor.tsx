@@ -53,7 +53,7 @@ export default function DocumentEditor() {
     () => (isEditing ? db.documents.get(Number(id)) : undefined),
     [id, isEditing],
   );
-  const allClients = useLiveQuery(() => db.clients.orderBy('company').toArray()) ?? [];
+  const allClients = useLiveQuery(() => db.clients.toCollection().sortBy('company')) ?? [];
 
   const {
     register,

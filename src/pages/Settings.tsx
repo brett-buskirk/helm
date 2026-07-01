@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Plus, X, Download, Upload, Sparkles, Lock } from 'lucide-react';
+import { Plus, X, Download, Upload, Sparkles, Lock, ShieldCheck, ShieldOff } from 'lucide-react';
 import { db, DEFAULT_EXPENSE_CATEGORIES } from '../db';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -12,6 +12,7 @@ import { FormField } from '../components/ui/FormField';
 import { Modal } from '../components/ui/Modal';
 import { exportAllData, exportEncryptedData, importData } from '../utils/backup';
 import { loadSampleData, countDemoData } from '../utils/sampleData';
+import { isEncryptionEnabled, enableEncryption, disableEncryption } from '../db/encryption';
 import { Toast } from '../components/ui/Toast';
 import { useToast } from '../hooks/useToast';
 
@@ -68,6 +69,13 @@ export default function Settings() {
   const [exportPass, setExportPass] = useState('');
   const [exportPass2, setExportPass2] = useState('');
   const [exporting, setExporting] = useState(false);
+
+  const encryptionEnabled = useLiveQuery(() => isEncryptionEnabled(), []);
+  const [enableModalOpen, setEnableModalOpen] = useState(false);
+  const [disableModalOpen, setDisableModalOpen] = useState(false);
+  const [vaultPass, setVaultPass] = useState('');
+  const [vaultPass2, setVaultPass2] = useState('');
+  const [vaultBusy, setVaultBusy] = useState(false);
 
   const {
     register,
@@ -190,6 +198,43 @@ export default function Settings() {
       showToast('error', 'Export failed.');
     } finally {
       setExporting(false);
+    }
+  }
+
+  async function handleEnableEncryption() {
+    if (vaultPass.length < 8) {
+      showToast('error', 'Use a passphrase of at least 8 characters.');
+      return;
+    }
+    if (vaultPass !== vaultPass2) {
+      showToast('error', 'Passphrases do not match.');
+      return;
+    }
+    setVaultBusy(true);
+    try {
+      await enableEncryption(vaultPass);
+      showToast('success', 'Encryption enabled. Your data is now encrypted at rest.');
+      setEnableModalOpen(false);
+      setVaultPass('');
+      setVaultPass2('');
+    } catch (err) {
+      showToast('error', err instanceof Error ? err.message : 'Could not enable encryption.');
+    } finally {
+      setVaultBusy(false);
+    }
+  }
+
+  async function handleDisableEncryption() {
+    setVaultBusy(true);
+    try {
+      await disableEncryption(vaultPass);
+      showToast('success', 'Encryption disabled. Data is stored unencrypted again.');
+      setDisableModalOpen(false);
+      setVaultPass('');
+    } catch (err) {
+      showToast('error', err instanceof Error ? err.message : 'Could not disable encryption.');
+    } finally {
+      setVaultBusy(false);
     }
   }
 
@@ -429,6 +474,42 @@ export default function Settings() {
             </div>
           </SectionCard>
 
+          {/* Encryption at rest */}
+          <SectionCard title="Encryption">
+            {encryptionEnabled ? (
+              <>
+                <div className="mb-4 flex items-start gap-2 text-sm">
+                  <ShieldCheck size={16} className="mt-0.5 shrink-0 text-emerald-400" />
+                  <p className="text-slate-300">
+                    Your data is <span className="font-medium text-emerald-400">encrypted at rest</span>.
+                    You'll be asked for your passphrase each time the app loads.
+                  </p>
+                </div>
+                <Button type="button" variant="danger" onClick={() => setDisableModalOpen(true)}>
+                  <ShieldOff size={15} />
+                  Disable Encryption
+                </Button>
+              </>
+            ) : (
+              <>
+                <p className="mb-4 text-sm text-slate-400">
+                  Encrypt your data at rest with a passphrase (AES via NaCl). Client details,
+                  amounts, notes, documents, and tokens become ciphertext in the database; only the
+                  structural graph (links, dates, statuses) stays readable. You'll unlock the app
+                  with your passphrase on each load.
+                </p>
+                <p className="mb-4 rounded-lg border border-amber-800 bg-amber-950/50 px-3 py-2 text-xs text-amber-200">
+                  There is no recovery — if you forget the passphrase, the data can't be decrypted.
+                  Keep an unencrypted or separately-remembered backup until you trust it.
+                </p>
+                <Button type="button" onClick={() => setEnableModalOpen(true)}>
+                  <ShieldCheck size={15} />
+                  Enable Encryption
+                </Button>
+              </>
+            )}
+          </SectionCard>
+
           {/* Demo data */}
           <SectionCard title="Demo Data">
             <p className="mb-4 text-sm text-slate-400">
@@ -555,6 +636,93 @@ export default function Settings() {
               autoComplete="new-password"
               value={exportPass2}
               onChange={(e) => setExportPass2(e.target.value)}
+            />
+          </FormField>
+        </div>
+      </Modal>
+
+      {/* Enable encryption */}
+      <Modal
+        isOpen={enableModalOpen}
+        onClose={() => {
+          setEnableModalOpen(false);
+          setVaultPass('');
+          setVaultPass2('');
+        }}
+        title="Enable Encryption"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setEnableModalOpen(false)} disabled={vaultBusy}>
+              Cancel
+            </Button>
+            <Button onClick={handleEnableEncryption} loading={vaultBusy}>
+              <ShieldCheck size={15} />
+              Enable
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-slate-300">
+            Choose a passphrase. Your existing data will be encrypted now, and you'll enter this
+            passphrase to unlock Helm on each load.
+          </p>
+          <p className="rounded-lg border border-amber-800 bg-amber-950/50 px-3 py-2 text-xs text-amber-200">
+            No recovery: if you forget it, the data can't be decrypted. Consider keeping a backup
+            until you're confident.
+          </p>
+          <FormField label="Passphrase" htmlFor="vault-pass" hint="At least 8 characters">
+            <Input
+              id="vault-pass"
+              type="password"
+              autoComplete="new-password"
+              value={vaultPass}
+              onChange={(e) => setVaultPass(e.target.value)}
+            />
+          </FormField>
+          <FormField label="Confirm passphrase" htmlFor="vault-pass2">
+            <Input
+              id="vault-pass2"
+              type="password"
+              autoComplete="new-password"
+              value={vaultPass2}
+              onChange={(e) => setVaultPass2(e.target.value)}
+            />
+          </FormField>
+        </div>
+      </Modal>
+
+      {/* Disable encryption */}
+      <Modal
+        isOpen={disableModalOpen}
+        onClose={() => {
+          setDisableModalOpen(false);
+          setVaultPass('');
+        }}
+        title="Disable Encryption"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setDisableModalOpen(false)} disabled={vaultBusy}>
+              Cancel
+            </Button>
+            <Button variant="danger" onClick={handleDisableEncryption} loading={vaultBusy}>
+              <ShieldOff size={15} />
+              Disable &amp; Decrypt
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-slate-300">
+            This decrypts all data back to plaintext storage. Enter your passphrase to confirm.
+          </p>
+          <FormField label="Passphrase" htmlFor="vault-disable-pass">
+            <Input
+              id="vault-disable-pass"
+              type="password"
+              autoComplete="current-password"
+              value={vaultPass}
+              onChange={(e) => setVaultPass(e.target.value)}
             />
           </FormField>
         </div>
