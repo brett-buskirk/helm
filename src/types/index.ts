@@ -159,6 +159,16 @@ export interface TimeEntry {
   updatedAt: Date;
 }
 
+export interface ToolLink {
+  id?: number;
+  label: string;
+  url: string;
+  /** Free-text group heading, e.g. "Cloud", "GitHub", "Google", "Monitoring". */
+  category: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface Settings {
   id?: number;
   businessName: string;

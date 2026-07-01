@@ -25,3 +25,7 @@ Thumbs.db
 
 # TypeScript build info
 *.tsbuildinfo
+
+# Generated/exported documents (invoices, SOWs, backups) — never committed
+*.pdf
+helm-backup-*.json

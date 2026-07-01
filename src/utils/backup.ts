@@ -12,13 +12,14 @@ interface BackupData {
   expenses: unknown[];
   documents: unknown[];
   timeEntries?: unknown[];
+  toolLinks?: unknown[];
   settings: unknown[];
 }
 
 export async function exportAllData(): Promise<void> {
   const data: BackupData = {
     exportedAt: new Date().toISOString(),
-    version: 2,
+    version: 3,
     clients: await db.clients.toArray(),
     projects: await db.projects.toArray(),
     proposals: await db.proposals.toArray(),
@@ -28,6 +29,7 @@ export async function exportAllData(): Promise<void> {
     expenses: await db.expenses.toArray(),
     documents: await db.documents.toArray(),
     timeEntries: await db.timeEntries.toArray(),
+    toolLinks: await db.toolLinks.toArray(),
     settings: await db.settings.toArray(),
   };
 
@@ -65,6 +67,7 @@ export async function importData(file: File): Promise<void> {
       db.expenses,
       db.documents,
       db.timeEntries,
+      db.toolLinks,
       db.settings,
     ],
     async () => {
@@ -77,6 +80,7 @@ export async function importData(file: File): Promise<void> {
       await db.expenses.clear();
       await db.documents.clear();
       await db.timeEntries.clear();
+      await db.toolLinks.clear();
       await db.settings.clear();
 
       if (data.clients?.length) await db.clients.bulkAdd(data.clients as never[]);
@@ -89,6 +93,8 @@ export async function importData(file: File): Promise<void> {
       if (data.documents?.length) await db.documents.bulkAdd(data.documents as never[]);
       // timeEntries absent in v1 backups — guard keeps restore back-compatible
       if (data.timeEntries?.length) await db.timeEntries.bulkAdd(data.timeEntries as never[]);
+      // toolLinks absent in v1/v2 backups — same back-compat guard
+      if (data.toolLinks?.length) await db.toolLinks.bulkAdd(data.toolLinks as never[]);
       if (data.settings?.length) await db.settings.bulkAdd(data.settings as never[]);
     },
   );
