@@ -1,4 +1,5 @@
 import { db } from '../db';
+import { encryptJSON, decryptJSON, isEncryptedBackup } from './crypto';
 
 interface BackupData {
   exportedAt: string;
@@ -16,8 +17,8 @@ interface BackupData {
   settings: unknown[];
 }
 
-export async function exportAllData(): Promise<void> {
-  const data: BackupData = {
+async function gatherBackupData(): Promise<BackupData> {
+  return {
     exportedAt: new Date().toISOString(),
     version: 3,
     clients: await db.clients.toArray(),
@@ -32,25 +33,38 @@ export async function exportAllData(): Promise<void> {
     toolLinks: await db.toolLinks.toArray(),
     settings: await db.settings.toArray(),
   };
+}
 
-  const blob = new Blob([JSON.stringify(data, null, 2)], {
-    type: 'application/json',
-  });
+function downloadFile(contents: string, filename: string): void {
+  const blob = new Blob([contents], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  const date = new Date().toISOString().split('T')[0];
   a.href = url;
-  a.download = `helm-backup-${date}.json`;
+  a.download = filename;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
 
-export async function importData(file: File): Promise<void> {
-  const text = await file.text();
-  const data = JSON.parse(text) as BackupData;
+function today(): string {
+  return new Date().toISOString().split('T')[0];
+}
 
+/** Download a plaintext JSON backup of all data. */
+export async function exportAllData(): Promise<void> {
+  const data = await gatherBackupData();
+  downloadFile(JSON.stringify(data, null, 2), `helm-backup-${today()}.json`);
+}
+
+/** Download a passphrase-encrypted backup of all data. */
+export async function exportEncryptedData(passphrase: string): Promise<void> {
+  const data = await gatherBackupData();
+  const encrypted = await encryptJSON(data, passphrase);
+  downloadFile(encrypted, `helm-backup-${today()}.encrypted.json`);
+}
+
+async function restoreBackup(data: BackupData): Promise<void> {
   if (!data.version || !data.exportedAt) {
     throw new Error('Invalid backup file format.');
   }
@@ -98,4 +112,32 @@ export async function importData(file: File): Promise<void> {
       if (data.settings?.length) await db.settings.bulkAdd(data.settings as never[]);
     },
   );
+}
+
+/** True if the file is a passphrase-encrypted Helm backup (needs a passphrase to import). */
+export async function isFileEncrypted(file: File): Promise<boolean> {
+  return isEncryptedBackup(await file.text());
+}
+
+/**
+ * Restore from a backup file. Pass `passphrase` for encrypted backups; it is
+ * ignored for plaintext ones. Throws a clear error if an encrypted file has no
+ * passphrase or the passphrase is wrong.
+ */
+export async function importData(file: File, passphrase?: string): Promise<void> {
+  const text = await file.text();
+
+  let data: BackupData;
+  if (isEncryptedBackup(text)) {
+    if (!passphrase) throw new Error('This backup is encrypted — enter its passphrase to restore.');
+    data = (await decryptJSON(text, passphrase)) as BackupData;
+  } else {
+    try {
+      data = JSON.parse(text) as BackupData;
+    } catch {
+      throw new Error('Invalid backup file format.');
+    }
+  }
+
+  await restoreBackup(data);
 }
