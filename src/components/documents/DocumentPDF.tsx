@@ -1,5 +1,6 @@
-import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
+import { Document, Page, Text, View, Image, StyleSheet } from '@react-pdf/renderer';
 import type { Document as Doc, Settings } from '../../types';
+import { brandColor, initials } from '../../utils/pdf';
 
 const DOC_TYPE_LABEL: Record<string, string> = {
   msa: 'Master Services Agreement',
@@ -19,14 +20,19 @@ const c = {
 
 const s = StyleSheet.create({
   page: {
-    paddingTop: 52,
+    paddingTop: 0,
     paddingBottom: 64,
     paddingHorizontal: 56,
     fontFamily: 'Helvetica',
     fontSize: 10,
     color: c.ink,
   },
+  band: { height: 6, marginHorizontal: -56 },
+  logo: { height: 34, maxWidth: 160, objectFit: 'contain', marginBottom: 12 },
+  logoMark: { height: 34, width: 34, borderRadius: 7, alignItems: 'center', justifyContent: 'center', marginBottom: 12 },
+  logoMarkText: { color: '#ffffff', fontSize: 14, fontFamily: 'Helvetica-Bold' },
   header: {
+    marginTop: 44,
     marginBottom: 24,
     paddingBottom: 16,
     borderBottomWidth: 2,
@@ -89,6 +95,8 @@ interface Props {
 export function DocumentPDF({ doc, settings }: Props) {
   const bizName = settings?.businessName ?? '';
   const typeLabel = DOC_TYPE_LABEL[doc.type] ?? 'Document';
+  const accent = brandColor(settings);
+  const logo = settings?.logo;
 
   // Split content into paragraphs (double newline), then lines within each
   const paragraphs = doc.content.split(/\n\n+/);
@@ -96,9 +104,18 @@ export function DocumentPDF({ doc, settings }: Props) {
   return (
     <Document>
       <Page size="A4" style={s.page}>
+        <View style={[s.band, { backgroundColor: accent }]} fixed />
+
         {/* Header */}
-        <View style={s.header}>
-          <Text style={s.docType}>{typeLabel}</Text>
+        <View style={[s.header, { borderBottomColor: accent }]}>
+          {logo ? (
+            <Image src={logo} style={s.logo} />
+          ) : bizName ? (
+            <View style={[s.logoMark, { backgroundColor: accent }]}>
+              <Text style={s.logoMarkText}>{initials(bizName)}</Text>
+            </View>
+          ) : null}
+          <Text style={[s.docType, { color: accent }]}>{typeLabel}</Text>
           <Text style={s.title}>{doc.title}</Text>
           {bizName ? <Text style={s.meta}>{bizName}</Text> : null}
         </View>

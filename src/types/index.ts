@@ -197,6 +197,10 @@ export interface Settings {
   phone?: string;
   website?: string;
   paymentInstructions: string;
+  /** Hex accent color for client-facing PDFs (e.g. "#6366f1"). */
+  brandColor?: string;
+  /** Business logo as a data URL, shown on PDFs. */
+  logo?: string;
   defaultRate: number;
   taxRate: number;
   invoicePrefix: string;

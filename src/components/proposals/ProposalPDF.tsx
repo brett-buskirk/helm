@@ -1,27 +1,34 @@
-import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
+import { Document, Page, Text, View, Image, StyleSheet } from '@react-pdf/renderer';
 import type { Proposal, Client, Project, Settings } from '../../types';
 import { formatCurrency, formatDate } from '../../utils/format';
+import { brandColor, initials } from '../../utils/pdf';
 
-const styles = StyleSheet.create({
-  page: { fontFamily: 'Helvetica', fontSize: 10, color: '#1e293b', padding: 48, lineHeight: 1.5 },
-  header: { marginBottom: 32 },
-  label: { fontSize: 8, fontFamily: 'Helvetica-Bold', color: '#6366f1', letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 4 },
-  title: { fontSize: 18, fontFamily: 'Helvetica-Bold', color: '#0f172a', marginBottom: 4 },
-  meta: { fontSize: 9, color: '#64748b' },
-  divider: { borderBottomWidth: 1, borderBottomColor: '#e2e8f0', marginVertical: 16 },
-  row: { flexDirection: 'row', gap: 32, marginBottom: 24 },
-  col: { flex: 1 },
-  sectionTitle: { fontSize: 8, fontFamily: 'Helvetica-Bold', color: '#6366f1', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6 },
-  body: { fontSize: 10, color: '#334155', lineHeight: 1.6 },
-  pricingBox: { backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 4, padding: 16, marginBottom: 24 },
-  pricingAmount: { fontSize: 22, fontFamily: 'Helvetica-Bold', color: '#0f172a', marginBottom: 4 },
-  pricingNote: { fontSize: 9, color: '#64748b' },
-  sigRow: { flexDirection: 'row', gap: 32, marginTop: 48 },
-  sigBlock: { flex: 1, borderTopWidth: 1, borderTopColor: '#cbd5e1', paddingTop: 8 },
-  sigLabel: { fontSize: 8, color: '#94a3b8' },
-  footer: { position: 'absolute', bottom: 32, left: 48, right: 48, flexDirection: 'row', justifyContent: 'space-between' },
-  footerText: { fontSize: 8, color: '#94a3b8' },
-});
+function makeStyles(accent: string) {
+  return StyleSheet.create({
+    page: { fontFamily: 'Helvetica', fontSize: 10, color: '#1e293b', paddingTop: 0, paddingBottom: 48, paddingHorizontal: 48, lineHeight: 1.5 },
+    band: { height: 6, marginHorizontal: -48 },
+    header: { marginTop: 42, marginBottom: 32 },
+    logo: { height: 38, maxWidth: 170, objectFit: 'contain', marginBottom: 14 },
+    logoMark: { height: 38, width: 38, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginBottom: 14, backgroundColor: accent },
+    logoMarkText: { color: '#ffffff', fontSize: 15, fontFamily: 'Helvetica-Bold' },
+    label: { fontSize: 8, fontFamily: 'Helvetica-Bold', color: accent, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 4 },
+    title: { fontSize: 18, fontFamily: 'Helvetica-Bold', color: '#0f172a', marginBottom: 4 },
+    meta: { fontSize: 9, color: '#64748b' },
+    divider: { borderBottomWidth: 1, borderBottomColor: '#e2e8f0', marginVertical: 16 },
+    row: { flexDirection: 'row', gap: 32, marginBottom: 24 },
+    col: { flex: 1 },
+    sectionTitle: { fontSize: 8, fontFamily: 'Helvetica-Bold', color: accent, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6 },
+    body: { fontSize: 10, color: '#334155', lineHeight: 1.6 },
+    pricingBox: { backgroundColor: '#f8fafc', borderLeftWidth: 3, borderLeftColor: accent, borderTopWidth: 1, borderRightWidth: 1, borderBottomWidth: 1, borderColor: '#e2e8f0', borderRadius: 4, padding: 16, marginBottom: 24 },
+    pricingAmount: { fontSize: 22, fontFamily: 'Helvetica-Bold', color: '#0f172a', marginBottom: 4 },
+    pricingNote: { fontSize: 9, color: '#64748b' },
+    sigRow: { flexDirection: 'row', gap: 32, marginTop: 48 },
+    sigBlock: { flex: 1, borderTopWidth: 1, borderTopColor: '#cbd5e1', paddingTop: 8 },
+    sigLabel: { fontSize: 8, color: '#94a3b8' },
+    footer: { position: 'absolute', bottom: 32, left: 48, right: 48, flexDirection: 'row', justifyContent: 'space-between' },
+    footerText: { fontSize: 8, color: '#94a3b8' },
+  });
+}
 
 interface Props {
   proposal: Proposal;
@@ -31,6 +38,10 @@ interface Props {
 }
 
 export function ProposalPDF({ proposal, client, project, settings }: Props) {
+  const accent = brandColor(settings);
+  const styles = makeStyles(accent);
+  const logo = settings?.logo;
+  const bizName = settings?.businessName ?? '';
   const isExpired = proposal.validUntil
     ? new Date(proposal.validUntil) < new Date()
     : false;
@@ -38,12 +49,21 @@ export function ProposalPDF({ proposal, client, project, settings }: Props) {
   return (
     <Document>
       <Page size="LETTER" style={styles.page}>
+        <View style={[styles.band, { backgroundColor: accent }]} fixed />
+
         {/* Header */}
         <View style={styles.header}>
+          {logo ? (
+            <Image src={logo} style={styles.logo} />
+          ) : bizName ? (
+            <View style={styles.logoMark}>
+              <Text style={styles.logoMarkText}>{initials(bizName)}</Text>
+            </View>
+          ) : null}
           <Text style={styles.label}>Proposal</Text>
           <Text style={styles.title}>{proposal.title}</Text>
           <Text style={styles.meta}>
-            {settings?.businessName ?? ''}{project ? `  ·  ${project.name}` : ''}
+            {bizName}{project ? `  ·  ${project.name}` : ''}
           </Text>
         </View>
 

@@ -1,6 +1,7 @@
-import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
+import { Document, Page, Text, View, Image, StyleSheet } from '@react-pdf/renderer';
 import type { Client, Invoice, Settings } from '../../types';
 import { formatCurrency, formatDate } from '../../utils/format';
+import { brandColor, initials } from '../../utils/pdf';
 
 const c = {
   ink: '#0f172a',
@@ -13,15 +14,20 @@ const c = {
 
 const s = StyleSheet.create({
   page: {
-    paddingTop: 48,
+    paddingTop: 0,
     paddingBottom: 64,
     paddingHorizontal: 52,
     fontFamily: 'Helvetica',
     fontSize: 10,
     color: c.ink,
   },
+  // ── Brand band ───────────────────────────────────────
+  band: { height: 6, marginHorizontal: -52 },
   // ── Header ───────────────────────────────────────────
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 28 },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 42, marginBottom: 28 },
+  logo: { height: 40, maxWidth: 180, objectFit: 'contain', marginBottom: 8 },
+  logoMark: { height: 40, width: 40, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
+  logoMarkText: { color: '#ffffff', fontSize: 16, fontFamily: 'Helvetica-Bold' },
   bizName: { fontSize: 15, fontFamily: 'Helvetica-Bold', marginBottom: 4 },
   bizDetail: { fontSize: 9, color: c.mid, marginBottom: 2 },
   invoiceTitle: { fontSize: 26, fontFamily: 'Helvetica-Bold', color: c.accent, marginBottom: 6, textAlign: 'right' },
@@ -71,9 +77,19 @@ const s = StyleSheet.create({
   totValue: { width: 88, textAlign: 'right', fontSize: 9, color: c.ink },
   totLabelBold: { flex: 1, textAlign: 'right', paddingRight: 16, fontSize: 10, fontFamily: 'Helvetica-Bold' },
   totValueBold: { width: 88, textAlign: 'right', fontSize: 10, fontFamily: 'Helvetica-Bold' },
-  totLabelAccent: { flex: 1, textAlign: 'right', paddingRight: 16, fontSize: 11, fontFamily: 'Helvetica-Bold', color: c.accent },
-  totValueAccent: { width: 88, textAlign: 'right', fontSize: 11, fontFamily: 'Helvetica-Bold', color: c.accent },
   totalsRule: { borderTopWidth: 1, borderTopColor: c.rule, width: 256, marginVertical: 4 },
+  balanceBox: {
+    marginTop: 6,
+    width: 256,
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  balanceLabel: { color: '#ffffff', fontSize: 9.5, fontFamily: 'Helvetica-Bold', textTransform: 'uppercase', letterSpacing: 1 },
+  balanceValue: { color: '#ffffff', fontSize: 14, fontFamily: 'Helvetica-Bold' },
   // ── Footer ───────────────────────────────────────────
   footer: { marginTop: 16 },
   footerText: { fontSize: 9, color: c.mid, lineHeight: 1.6 },
@@ -93,13 +109,25 @@ export function InvoicePDF({ invoice, client, settings }: Props) {
   const bizEmail = settings?.email ?? '';
   const bizPhone = settings?.phone ?? '';
   const paymentInstructions = settings?.paymentInstructions ?? '';
+  const accent = brandColor(settings);
+  const logo = settings?.logo;
 
   return (
     <Document>
       <Page size="A4" style={s.page}>
+        {/* ── Brand band ── */}
+        <View style={[s.band, { backgroundColor: accent }]} fixed />
+
         {/* ── Header ── */}
         <View style={s.headerRow}>
           <View>
+            {logo ? (
+              <Image src={logo} style={s.logo} />
+            ) : (
+              <View style={[s.logoMark, { backgroundColor: accent }]}>
+                <Text style={s.logoMarkText}>{initials(bizName)}</Text>
+              </View>
+            )}
             <Text style={s.bizName}>{bizName}</Text>
             {ownerName && ownerName !== bizName && (
               <Text style={s.bizDetail}>{ownerName}</Text>
@@ -112,7 +140,7 @@ export function InvoicePDF({ invoice, client, settings }: Props) {
           </View>
 
           <View>
-            <Text style={s.invoiceTitle}>INVOICE</Text>
+            <Text style={[s.invoiceTitle, { color: accent }]}>INVOICE</Text>
             <Text style={s.invoiceNumber}>{invoice.invoiceNumber}</Text>
             <View style={s.dateRow}>
               <Text style={s.dateLabel}>Issued</Text>
@@ -191,10 +219,9 @@ export function InvoicePDF({ invoice, client, settings }: Props) {
               <Text style={s.totValue}>({formatCurrency(invoice.amountPaid)})</Text>
             </View>
           )}
-          <View style={s.totalsRule} />
-          <View style={s.totalRow}>
-            <Text style={s.totLabelAccent}>Balance Due</Text>
-            <Text style={s.totValueAccent}>{formatCurrency(invoice.balanceDue)}</Text>
+          <View style={[s.balanceBox, { backgroundColor: accent }]}>
+            <Text style={s.balanceLabel}>Balance Due</Text>
+            <Text style={s.balanceValue}>{formatCurrency(invoice.balanceDue)}</Text>
           </View>
         </View>
 
