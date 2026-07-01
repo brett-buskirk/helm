@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Plus, X, Download, Upload, Sparkles, Lock, ShieldCheck, ShieldOff } from 'lucide-react';
+import { Plus, X, Download, Upload, Sparkles, Lock, ShieldCheck, ShieldOff, Image as ImageIcon } from 'lucide-react';
 import { db, DEFAULT_EXPENSE_CATEGORIES } from '../db';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -13,6 +13,8 @@ import { Modal } from '../components/ui/Modal';
 import { exportAllData, exportEncryptedData, importData } from '../utils/backup';
 import { loadSampleData, countDemoData } from '../utils/sampleData';
 import { isEncryptionEnabled, enableEncryption, disableEncryption } from '../db/encryption';
+import { fileToLogoDataUrl } from '../utils/image';
+import { DEFAULT_BRAND } from '../utils/pdf';
 import { Toast } from '../components/ui/Toast';
 import { useToast } from '../hooks/useToast';
 
@@ -25,6 +27,7 @@ const settingsSchema = z.object({
   phone: z.string().optional(),
   website: z.string().optional(),
   paymentInstructions: z.string().min(1, 'Required'),
+  brandColor: z.string().optional(),
   defaultRate: z.coerce.number().min(0, 'Must be a positive number'),
   taxRate: z.coerce
     .number()
@@ -77,10 +80,16 @@ export default function Settings() {
   const [vaultPass2, setVaultPass2] = useState('');
   const [vaultBusy, setVaultBusy] = useState(false);
 
+  const [logo, setLogo] = useState<string | undefined>();
+  const [logoBusy, setLogoBusy] = useState(false);
+  const logoInputRef = useRef<HTMLInputElement>(null);
+
   const {
     register,
     handleSubmit,
     reset,
+    watch,
+    setValue,
     formState: { errors },
   } = useForm<SettingsFormData>({
     resolver: zodResolver(settingsSchema),
@@ -94,6 +103,7 @@ export default function Settings() {
       website: '',
       paymentInstructions:
         'Payment due within 30 days of invoice date.\nACH / wire transfer preferred. Details provided upon request.',
+      brandColor: DEFAULT_BRAND,
       defaultRate: 0,
       taxRate: 25,
       invoicePrefix: 'INV-',
@@ -112,14 +122,29 @@ export default function Settings() {
         phone: settingsRecord.phone ?? '',
         website: settingsRecord.website ?? '',
         paymentInstructions: settingsRecord.paymentInstructions,
+        brandColor: settingsRecord.brandColor ?? DEFAULT_BRAND,
         defaultRate: settingsRecord.defaultRate,
         taxRate: settingsRecord.taxRate,
         invoicePrefix: settingsRecord.invoicePrefix,
         invoiceNextNumber: settingsRecord.invoiceNextNumber,
       });
       setCategories(settingsRecord.expenseCategories);
+      setLogo(settingsRecord.logo);
     }
   }, [settingsRecord, reset]);
+
+  async function handleLogoUpload(file: File | undefined) {
+    if (!file) return;
+    setLogoBusy(true);
+    try {
+      setLogo(await fileToLogoDataUrl(file));
+    } catch (err) {
+      showToast('error', err instanceof Error ? err.message : 'Could not load that image.');
+    } finally {
+      setLogoBusy(false);
+      if (logoInputRef.current) logoInputRef.current.value = '';
+    }
+  }
 
   async function onSubmit(data: SettingsFormData) {
     setSaving(true);
@@ -129,6 +154,8 @@ export default function Settings() {
         ein: data.ein || undefined,
         phone: data.phone || undefined,
         website: data.website || undefined,
+        brandColor: data.brandColor || DEFAULT_BRAND,
+        logo: logo || undefined,
         expenseCategories: categories,
         updatedAt: new Date(),
       };
@@ -318,6 +345,72 @@ export default function Settings() {
                   error={errors.address?.message}
                 />
               </FormField>
+            </div>
+          </SectionCard>
+
+          {/* Branding */}
+          <SectionCard title="Branding">
+            <p className="mb-4 text-sm text-slate-400">
+              Personalize your client-facing PDFs (invoices, proposals, documents) with your logo
+              and brand color.
+            </p>
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-slate-300">Brand color</label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="color"
+                    {...register('brandColor')}
+                    className="h-10 w-14 cursor-pointer rounded border border-slate-700 bg-slate-800"
+                    aria-label="Brand color"
+                  />
+                  <span className="font-mono text-sm uppercase text-slate-400">{watch('brandColor')}</span>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#334155'].map((sw) => (
+                    <button
+                      key={sw}
+                      type="button"
+                      onClick={() => setValue('brandColor', sw, { shouldDirty: true })}
+                      className="h-6 w-6 rounded-full border border-slate-600 transition-transform hover:scale-110"
+                      style={{ backgroundColor: sw }}
+                      aria-label={`Use ${sw}`}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-slate-300">Logo</label>
+                <div className="flex items-center gap-4">
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-700 bg-slate-900">
+                    {logo ? (
+                      <img src={logo} alt="Logo preview" className="max-h-full max-w-full object-contain" />
+                    ) : (
+                      <ImageIcon size={20} className="text-slate-600" />
+                    )}
+                  </div>
+                  <div className="flex flex-col items-start gap-2">
+                    <input
+                      ref={logoInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleLogoUpload(e.target.files?.[0])}
+                      className="hidden"
+                    />
+                    <Button type="button" size="sm" variant="secondary" loading={logoBusy} onClick={() => logoInputRef.current?.click()}>
+                      <Upload size={14} />
+                      {logo ? 'Replace' : 'Upload'}
+                    </Button>
+                    {logo && (
+                      <button type="button" onClick={() => setLogo(undefined)} className="text-xs text-slate-500 hover:text-red-400 transition-colors">
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <p className="mt-2 text-xs text-slate-600">Auto-resized. Appears on your PDFs.</p>
+              </div>
             </div>
           </SectionCard>
 
