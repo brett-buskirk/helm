@@ -3,14 +3,14 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Plus, X, Download, Upload, Sparkles } from 'lucide-react';
+import { Plus, X, Download, Upload, Sparkles, Lock } from 'lucide-react';
 import { db, DEFAULT_EXPENSE_CATEGORIES } from '../db';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Textarea } from '../components/ui/Textarea';
 import { FormField } from '../components/ui/FormField';
 import { Modal } from '../components/ui/Modal';
-import { exportAllData, importData } from '../utils/backup';
+import { exportAllData, exportEncryptedData, importData } from '../utils/backup';
 import { loadSampleData, countDemoData } from '../utils/sampleData';
 import { Toast } from '../components/ui/Toast';
 import { useToast } from '../hooks/useToast';
@@ -60,9 +60,14 @@ export default function Settings() {
   const [saving, setSaving] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [importPass, setImportPass] = useState('');
   const importFileRef = useRef<HTMLInputElement>(null);
   const [loadingSample, setLoadingSample] = useState(false);
   const demoCount = useLiveQuery(() => countDemoData(), []) ?? 0;
+  const [encryptModalOpen, setEncryptModalOpen] = useState(false);
+  const [exportPass, setExportPass] = useState('');
+  const [exportPass2, setExportPass2] = useState('');
+  const [exporting, setExporting] = useState(false);
 
   const {
     register,
@@ -165,16 +170,40 @@ export default function Settings() {
     }
   }
 
+  async function handleExportEncrypted() {
+    if (exportPass.length < 8) {
+      showToast('error', 'Use a passphrase of at least 8 characters.');
+      return;
+    }
+    if (exportPass !== exportPass2) {
+      showToast('error', 'Passphrases do not match.');
+      return;
+    }
+    setExporting(true);
+    try {
+      await exportEncryptedData(exportPass);
+      showToast('success', 'Encrypted backup downloaded.');
+      setEncryptModalOpen(false);
+      setExportPass('');
+      setExportPass2('');
+    } catch {
+      showToast('error', 'Export failed.');
+    } finally {
+      setExporting(false);
+    }
+  }
+
   async function handleImport() {
     const file = importFileRef.current?.files?.[0];
     if (!file) return;
     setImporting(true);
     try {
-      await importData(file);
+      await importData(file, importPass || undefined);
       setImportModalOpen(false);
+      setImportPass('');
       showToast('success', 'Data restored from backup.');
-    } catch {
-      showToast('error', 'Import failed — invalid backup file.');
+    } catch (err) {
+      showToast('error', err instanceof Error ? err.message : 'Import failed — invalid backup file.');
     } finally {
       setImporting(false);
       if (importFileRef.current) importFileRef.current.value = '';
@@ -377,12 +406,17 @@ export default function Settings() {
           <SectionCard title="Data & Backup">
             <p className="mb-4 text-sm text-slate-400">
               All data is stored locally in your browser. Export a backup regularly — clearing
-              browser data will wipe it.
+              browser data will wipe it. Use <span className="text-slate-300">Export Encrypted</span>{' '}
+              to passphrase-protect a backup you'll store off your machine.
             </p>
             <div className="flex flex-wrap gap-3">
               <Button type="button" variant="secondary" onClick={handleExport}>
                 <Download size={15} />
                 Export All Data
+              </Button>
+              <Button type="button" variant="secondary" onClick={() => setEncryptModalOpen(true)}>
+                <Lock size={15} />
+                Export Encrypted
               </Button>
               <Button
                 type="button"
@@ -436,7 +470,10 @@ export default function Settings() {
       {/* Import confirmation modal */}
       <Modal
         isOpen={importModalOpen}
-        onClose={() => setImportModalOpen(false)}
+        onClose={() => {
+          setImportModalOpen(false);
+          setImportPass('');
+        }}
         title="Import Backup"
         footer={
           <>
@@ -460,6 +497,66 @@ export default function Settings() {
             accept=".json,application/json"
             className="block w-full text-sm text-slate-300 file:mr-3 file:rounded file:border-0 file:bg-slate-700 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-slate-100 hover:file:bg-slate-600"
           />
+          <FormField label="Passphrase" htmlFor="import-pass" hint="Only needed if the backup is encrypted">
+            <Input
+              id="import-pass"
+              type="password"
+              autoComplete="off"
+              value={importPass}
+              onChange={(e) => setImportPass(e.target.value)}
+              placeholder="Leave blank for a plain backup"
+            />
+          </FormField>
+        </div>
+      </Modal>
+
+      {/* Encrypted export */}
+      <Modal
+        isOpen={encryptModalOpen}
+        onClose={() => {
+          setEncryptModalOpen(false);
+          setExportPass('');
+          setExportPass2('');
+        }}
+        title="Export Encrypted Backup"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setEncryptModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleExportEncrypted} loading={exporting}>
+              <Lock size={15} />
+              Encrypt &amp; Download
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-slate-300">
+            The backup file will be encrypted with your passphrase (AES-256-GCM). You'll need the
+            same passphrase to restore it.
+          </p>
+          <p className="rounded-lg border border-amber-800 bg-amber-950/50 px-3 py-2 text-xs text-amber-200">
+            There is no recovery — if you lose the passphrase, the backup is unreadable.
+          </p>
+          <FormField label="Passphrase" htmlFor="export-pass" hint="At least 8 characters">
+            <Input
+              id="export-pass"
+              type="password"
+              autoComplete="new-password"
+              value={exportPass}
+              onChange={(e) => setExportPass(e.target.value)}
+            />
+          </FormField>
+          <FormField label="Confirm passphrase" htmlFor="export-pass2">
+            <Input
+              id="export-pass2"
+              type="password"
+              autoComplete="new-password"
+              value={exportPass2}
+              onChange={(e) => setExportPass2(e.target.value)}
+            />
+          </FormField>
         </div>
       </Modal>
 
