@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Outlet } from 'react-router';
 import { Sidebar } from './Sidebar';
-import { SearchModal } from '../search/SearchModal';
+import { CommandPalette } from '../command/CommandPalette';
 
 export function AppLayout() {
   const [searchOpen, setSearchOpen] = useState(false);
@@ -23,7 +23,7 @@ export function AppLayout() {
       <main className="flex-1 overflow-y-auto">
         <Outlet />
       </main>
-      <SearchModal isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
+      <CommandPalette isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
     </div>
   );
 }
