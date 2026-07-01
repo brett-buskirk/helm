@@ -14,3 +14,15 @@ body {
 #root {
   height: 100%;
 }
+
+/* Visible keyboard-focus indicator for every interactive element, including the
+   many raw icon-buttons and links that don't use the Button component. Elements
+   that opt out with `outline-none` (e.g. the Button component, which draws its
+   own ring) override this. */
+@layer base {
+  :focus-visible {
+    outline: 2px solid #818cf8; /* indigo-400 — high contrast on dark slate */
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+}

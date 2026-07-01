@@ -154,12 +154,14 @@ export default function Proposals() {
                       >
                         <button
                           onClick={() => navigate(`/proposals/${proposal.id}/edit`)}
+                          aria-label="Edit proposal"
                           className="rounded p-1.5 text-slate-400 hover:bg-slate-700 hover:text-slate-100 transition-colors"
                         >
                           <Pencil size={13} />
                         </button>
                         <button
                           onClick={() => setDeleteTarget(proposal)}
+                          aria-label="Delete proposal"
                           className="rounded p-1.5 text-red-500 hover:bg-red-950 hover:text-red-300 transition-colors"
                         >
                           <Trash2 size={13} />
