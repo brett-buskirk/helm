@@ -20,6 +20,9 @@ jobs:
       - name: Type check
         run: npx tsc -b --noEmit
 
+      - name: Check for circular imports
+        run: npm run check:cycles
+
       - name: Run tests
         run: npm run test:run
 
