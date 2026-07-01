@@ -27,7 +27,7 @@ export const ENCRYPTED_FIELDS: Record<string, string[]> = {
   documents: ['title', 'content'],
   timeEntries: ['description', 'hours'],
   toolLinks: ['label', 'url'],
-  settings: ['businessName', 'ownerName', 'ein', 'address', 'email', 'phone', 'website', 'paymentInstructions', 'defaultRate'],
+  settings: ['businessName', 'ownerName', 'ein', 'address', 'email', 'phone', 'website', 'paymentInstructions', 'defaultRate', 'githubToken'],
 };
 
 /* eslint-disable @typescript-eslint/no-explicit-any */

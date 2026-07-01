@@ -201,6 +201,10 @@ export interface Settings {
   brandColor?: string;
   /** Business logo as a data URL, shown on PDFs. */
   logo?: string;
+  /** GitHub personal access token — opt-in; encrypted at rest when encryption is on. */
+  githubToken?: string;
+  /** Connected GitHub username, for display. Presence of githubToken = connected. */
+  githubUser?: string;
   defaultRate: number;
   taxRate: number;
   invoicePrefix: string;
