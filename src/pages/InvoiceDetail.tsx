@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { ArrowLeft, Pencil, Download, Send, DollarSign, XCircle } from 'lucide-react';
-import { PDFDownloadLink } from '@react-pdf/renderer';
+import { usePdfDownload } from '../hooks/usePdfDownload';
 import { db } from '../db';
 import type { Client, Project, Payment } from '../types';
 import { Badge } from '../components/ui/Badge';
@@ -28,6 +28,7 @@ export default function InvoiceDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast, showToast } = useToast();
+  const { download: downloadPdf, busy: pdfBusy } = usePdfDownload((msg) => showToast('error', msg));
 
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
@@ -144,17 +145,15 @@ export default function InvoiceDetail() {
             </Button>
           )}
           {/* PDF download */}
-          <PDFDownloadLink
-            document={<InvoicePDF invoice={invoice} client={client} settings={settings} />}
-            fileName={`${invoice.invoiceNumber}.pdf`}
+          <Button
+            variant="ghost"
+            size="sm"
+            loading={pdfBusy}
+            onClick={() => downloadPdf(<InvoicePDF invoice={invoice} client={client} settings={settings} />, `${invoice.invoiceNumber}.pdf`)}
           >
-            {({ loading: pdfLoading }) => (
-              <Button variant="ghost" size="sm" disabled={pdfLoading}>
-                <Download size={13} />
-                {pdfLoading ? 'Preparing…' : 'PDF'}
-              </Button>
-            )}
-          </PDFDownloadLink>
+            <Download size={13} />
+            PDF
+          </Button>
           {canCancel && (
             <Button variant="ghost" size="sm" onClick={() => setCancelModalOpen(true)}>
               <XCircle size={13} />

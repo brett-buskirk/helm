@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { ArrowLeft, Pencil, Trash2, Download, FileText, CheckCircle, XCircle, Send } from 'lucide-react';
-import { PDFDownloadLink } from '@react-pdf/renderer';
+import { usePdfDownload } from '../hooks/usePdfDownload';
 import { db } from '../db';
 import type { ProposalStatus } from '../types';
 import { Badge } from '../components/ui/Badge';
@@ -33,6 +33,7 @@ export default function ProposalDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast, showToast } = useToast();
+  const { download: downloadPdf, busy: pdfBusy } = usePdfDownload((msg) => showToast('error', msg));
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [updating, setUpdating] = useState(false);
@@ -118,17 +119,15 @@ export default function ProposalDetail() {
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <PDFDownloadLink
-            document={<ProposalPDF proposal={proposal} client={client} project={project} settings={settings} />}
-            fileName={`${safeFilename}.pdf`}
+          <Button
+            variant="ghost"
+            size="sm"
+            loading={pdfBusy}
+            onClick={() => downloadPdf(<ProposalPDF proposal={proposal} client={client} project={project} settings={settings} />, `${safeFilename}.pdf`)}
           >
-            {({ loading }) => (
-              <Button variant="ghost" size="sm" disabled={loading}>
-                <Download size={14} />
-                PDF
-              </Button>
-            )}
-          </PDFDownloadLink>
+            <Download size={14} />
+            PDF
+          </Button>
           <Button variant="ghost" size="sm" onClick={() => navigate(`/proposals/${id}/edit`)}>
             <Pencil size={14} />
             Edit
