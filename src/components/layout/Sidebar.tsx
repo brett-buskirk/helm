@@ -16,6 +16,7 @@ import {
   Wrench,
   Lock,
 } from 'lucide-react';
+import { db } from '../../db';
 import { ConfirmModal } from '../ui/ConfirmModal';
 import { Toast } from '../ui/Toast';
 import { useToast } from '../../hooks/useToast';
@@ -45,6 +46,9 @@ export function Sidebar({ onSearchOpen }: SidebarProps) {
   const [clearing, setClearing] = useState(false);
   const demoCount = useLiveQuery(() => countDemoData(), []) ?? 0;
   const encrypted = useLiveQuery(() => isEncryptionEnabled(), []) ?? false;
+  const settings = useLiveQuery(() => db.settings.limit(1).first());
+  const logo = settings?.logo;
+  const brandName = settings?.businessName?.trim() || 'Helm';
 
   async function handleClearDemo() {
     setClearing(true);
@@ -61,25 +65,31 @@ export function Sidebar({ onSearchOpen }: SidebarProps) {
 
   return (
     <aside className="flex h-full w-56 flex-col bg-slate-950 border-r border-slate-800">
-      {/* Brand */}
-      <div className="flex items-center gap-3 px-5 py-5 border-b border-slate-800">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600">
-          <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
-            <g stroke="white" strokeWidth="1.8" strokeLinecap="round">
-              <line x1="12" y1="12" x2="12" y2="2"/>
-              <line x1="12" y1="12" x2="19.1" y2="4.9"/>
-              <line x1="12" y1="12" x2="22" y2="12"/>
-              <line x1="12" y1="12" x2="19.1" y2="19.1"/>
-              <line x1="12" y1="12" x2="12" y2="22"/>
-              <line x1="12" y1="12" x2="4.9" y2="19.1"/>
-              <line x1="12" y1="12" x2="2" y2="12"/>
-              <line x1="12" y1="12" x2="4.9" y2="4.9"/>
-            </g>
-            <circle cx="12" cy="12" r="7" stroke="white" strokeWidth="1.5"/>
-            <circle cx="12" cy="12" r="2.2" fill="white"/>
-          </svg>
-        </div>
-        <span className="text-base font-semibold tracking-tight text-slate-100">Helm</span>
+      {/* Brand — the user's logo/business name once set, else Helm's own */}
+      <div className="flex items-center gap-3 border-b border-slate-800 px-5 py-5">
+        {logo ? (
+          <img src={logo} alt={brandName} className="max-h-9 max-w-[170px] object-contain" />
+        ) : (
+          <>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600">
+              <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
+                <g stroke="white" strokeWidth="1.8" strokeLinecap="round">
+                  <line x1="12" y1="12" x2="12" y2="2" />
+                  <line x1="12" y1="12" x2="19.1" y2="4.9" />
+                  <line x1="12" y1="12" x2="22" y2="12" />
+                  <line x1="12" y1="12" x2="19.1" y2="19.1" />
+                  <line x1="12" y1="12" x2="12" y2="22" />
+                  <line x1="12" y1="12" x2="4.9" y2="19.1" />
+                  <line x1="12" y1="12" x2="2" y2="12" />
+                  <line x1="12" y1="12" x2="4.9" y2="4.9" />
+                </g>
+                <circle cx="12" cy="12" r="7" stroke="white" strokeWidth="1.5" />
+                <circle cx="12" cy="12" r="2.2" fill="white" />
+              </svg>
+            </div>
+            <span className="truncate text-base font-semibold tracking-tight text-slate-100">{brandName}</span>
+          </>
+        )}
       </div>
 
       {/* Search */}
