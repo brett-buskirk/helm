@@ -27,11 +27,14 @@ body {
   }
 }
 
-/* Always-visible, styled scrollbars. The WSL WebKit webview hides overlay
-   scrollbars by default, so long content looked unscrollable. Kept UNLAYERED so
-   it outranks Tailwind's layers, using the -webkit- pseudo-elements WebKitGTK
-   honors with a visible gutter (no standard scrollbar-width, which can suppress
-   the pseudo-elements). */
+/* Always-visible scrollbars. The Linux/WSL desktop app runs on WebKitGTK, which
+   IGNORES the -webkit-scrollbar pseudo-elements (a Chromium/Safari feature) and
+   instead honors the STANDARD `scrollbar-color`; the Rust side also sets
+   GTK_OVERLAY_SCROLLING=0 to stop the auto-hide. The -webkit- rules below only
+   affect the Chromium/Safari browser build. Unlayered so nothing overrides it. */
+* {
+  scrollbar-color: #64748b #1e293b; /* thumb slate-500, track slate-800 (visible) */
+}
 ::-webkit-scrollbar {
   width: 12px;
   height: 12px;
