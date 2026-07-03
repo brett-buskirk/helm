@@ -423,7 +423,7 @@ export default function InvoiceForm() {
             {/* Notes */}
             <div className="mt-6">
               <FormField label="Notes" htmlFor="notes" hint="Appears at the bottom of the invoice">
-                <Textarea id="notes" rows={3} placeholder="Additional notes for the client…" {...register('notes')} />
+                <Textarea id="notes" rows={3} autoGrow placeholder="Additional notes for the client…" {...register('notes')} />
               </FormField>
             </div>
           </div>

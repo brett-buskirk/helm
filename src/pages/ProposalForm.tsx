@@ -199,6 +199,7 @@ export default function ProposalForm() {
             <Textarea
               id="scope"
               rows={5}
+              autoGrow
               placeholder="Describe the work, background, and objectives…"
               {...register('scope')}
             />
@@ -213,6 +214,7 @@ export default function ProposalForm() {
             <Textarea
               id="deliverables"
               rows={5}
+              autoGrow
               placeholder="List the concrete outputs the client will receive…"
               {...register('deliverables')}
             />
