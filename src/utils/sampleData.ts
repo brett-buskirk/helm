@@ -44,6 +44,16 @@ function monthStart(n: number, base = new Date()): Date {
   return new Date(base.getFullYear(), base.getMonth() - n, 1);
 }
 
+/**
+ * A date within the current calendar month, clamped to a valid day. Use this
+ * (rather than daysAgo) for records that should always land in "this month" —
+ * early in a month, daysAgo(3) falls into the previous month.
+ */
+function thisMonth(day: number, base = new Date()): Date {
+  const lastDay = new Date(base.getFullYear(), base.getMonth() + 1, 0).getDate();
+  return new Date(base.getFullYear(), base.getMonth(), Math.min(Math.max(day, 1), lastDay));
+}
+
 function lineItem(description: string, quantity: number, unitPrice: number): InvoiceLineItem {
   return { description, quantity, unitPrice, amount: round2(quantity * unitPrice) };
 }
@@ -442,10 +452,10 @@ export async function loadSampleData(): Promise<void> {
 
   // ── Expenses across categories + months ──────────────────────────────────────
   await db.expenses.bulkAdd([
-    { ...DEMO, date: daysAgo(3), vendor: 'DigitalOcean', category: 'Software & Subscriptions', amount: 142.5, deductible: true, billable: false, createdAt: daysAgo(3), updatedAt: daysAgo(3), notes: 'Droplets + Spaces (current month)' },
+    { ...DEMO, date: thisMonth(2), vendor: 'DigitalOcean', category: 'Software & Subscriptions', amount: 142.5, deductible: true, billable: false, createdAt: thisMonth(2), updatedAt: thisMonth(2), notes: 'Droplets + Spaces (current month)' },
     { ...DEMO, date: daysAgo(33), vendor: 'DigitalOcean', category: 'Software & Subscriptions', amount: 138.2, deductible: true, billable: false, createdAt: daysAgo(33), updatedAt: daysAgo(33) },
     { ...DEMO, date: daysAgo(63), vendor: 'DigitalOcean', category: 'Software & Subscriptions', amount: 129.9, deductible: true, billable: false, createdAt: daysAgo(63), updatedAt: daysAgo(63) },
-    { ...DEMO, date: daysAgo(6), vendor: 'GitHub', category: 'Software & Subscriptions', amount: 21, deductible: true, billable: false, createdAt: daysAgo(6), updatedAt: daysAgo(6), notes: 'Team plan' },
+    { ...DEMO, date: thisMonth(1), vendor: 'GitHub', category: 'Software & Subscriptions', amount: 21, deductible: true, billable: false, createdAt: thisMonth(1), updatedAt: thisMonth(1), notes: 'Team plan' },
     { ...DEMO, date: daysAgo(9), vendor: 'Grafana Cloud', category: 'Software & Subscriptions', amount: 49, deductible: true, billable: true, clientId: northwind, projectId: pNorthwind, createdAt: daysAgo(9), updatedAt: daysAgo(9), notes: 'Pass-through for Northwind dashboards' },
     { ...DEMO, date: daysAgo(18), vendor: 'Tailscale', category: 'Software & Subscriptions', amount: 18, deductible: true, billable: false, createdAt: daysAgo(18), updatedAt: daysAgo(18) },
     { ...DEMO, date: daysAgo(27), vendor: 'Terraform Cloud (HashiCorp)', category: 'Software & Subscriptions', amount: 20, deductible: true, billable: false, createdAt: daysAgo(27), updatedAt: daysAgo(27) },
