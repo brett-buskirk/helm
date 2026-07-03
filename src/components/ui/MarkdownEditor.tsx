@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Controller, type Control, type FieldValues, type Path } from 'react-hook-form';
 import { Eye, Pencil } from 'lucide-react';
 import { MarkdownPreview } from './MarkdownPreview';
+import { MentionTextarea } from './MentionTextarea';
 
 interface MarkdownEditorProps {
   value: string;
@@ -31,10 +32,10 @@ export function MarkdownEditor({ value, onChange, id, placeholder, rows = 8, has
         <span className="ml-auto pr-1 text-[10px] text-slate-600">Markdown supported</span>
       </div>
       {tab === 'write' ? (
-        <textarea
+        <MentionTextarea
           id={id}
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={onChange}
           rows={rows}
           placeholder={placeholder}
           className="block w-full resize-y bg-slate-900 px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none"
