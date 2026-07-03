@@ -35,3 +35,6 @@ helm-backup-*.json
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# Developer notes and resources
+dev-notes/

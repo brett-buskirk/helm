@@ -87,33 +87,37 @@ export function ProjectForm({ project, lockedClientId, isOpen, onClose, onSucces
   });
 
   useEffect(() => {
-    if (isOpen) {
-      reset(
-        project
-          ? {
-              clientId: project.clientId,
-              name: project.name,
-              type: project.type,
-              status: project.status,
-              startDate: toDateInputValue(project.startDate),
-              endDate: toDateInputValue(project.endDate),
-              rate: project.rate,
-              description: project.description ?? '',
-              links: project.links ?? [],
-            }
-          : {
-              clientId: lockedClientId ?? 0,
-              name: '',
-              type: 'fixed',
-              status: 'active',
-              startDate: '',
-              endDate: '',
-              rate: undefined,
-              description: '',
-              links: [],
-            },
-      );
-    }
+    if (!isOpen) return;
+    // Reset the number input to '' rather than undefined — RHF leaves an
+    // uncontrolled number field's DOM value in place when reset to undefined,
+    // so the prior project's fee would otherwise carry into the next new form.
+    // '' clears it, and the schema still parses '' back to undefined on submit.
+    const emptyRate = '' as unknown as undefined;
+    reset(
+      project
+        ? {
+            clientId: project.clientId,
+            name: project.name,
+            type: project.type,
+            status: project.status,
+            startDate: toDateInputValue(project.startDate),
+            endDate: toDateInputValue(project.endDate),
+            rate: project.rate ?? emptyRate,
+            description: project.description ?? '',
+            links: project.links ?? [],
+          }
+        : {
+            clientId: lockedClientId ?? 0,
+            name: '',
+            type: 'fixed',
+            status: 'active',
+            startDate: '',
+            endDate: '',
+            rate: emptyRate,
+            description: '',
+            links: [],
+          },
+    );
   }, [isOpen, project, lockedClientId, reset]);
 
   async function onSubmit(data: FormData) {

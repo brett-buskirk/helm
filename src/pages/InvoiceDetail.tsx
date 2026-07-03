@@ -149,7 +149,7 @@ export default function InvoiceDetail() {
             variant="ghost"
             size="sm"
             loading={pdfBusy}
-            onClick={() => downloadPdf(<InvoicePDF invoice={invoice} client={client} settings={settings} />, `${invoice.invoiceNumber}.pdf`)}
+            onClick={() => downloadPdf(<InvoicePDF invoice={invoice} client={client} settings={settings} />, `${invoice.invoiceNumber}${effectiveStatus === 'paid' ? '-PAID' : ''}.pdf`)}
           >
             <Download size={13} />
             PDF
