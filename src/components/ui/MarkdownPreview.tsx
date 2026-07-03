@@ -11,9 +11,15 @@ const components: Components = {
   ul: ({ node: _n, ...p }) => <ul className="mb-3 ml-5 list-disc space-y-1 text-slate-300" {...p} />,
   ol: ({ node: _n, ...p }) => <ol className="mb-3 ml-5 list-decimal space-y-1 text-slate-300" {...p} />,
   li: ({ node: _n, ...p }) => <li className="leading-relaxed" {...p} />,
-  a: ({ node: _n, ...p }) => (
-    <a className="text-indigo-400 hover:underline" target="_blank" rel="noopener noreferrer" {...p} />
-  ),
+  a: ({ node: _n, href, ...p }) => {
+    // In-app hash links (@-mentions) navigate in the same tab; external open new.
+    const internal = typeof href === 'string' && href.startsWith('#/');
+    return internal ? (
+      <a href={href} className="text-indigo-400 hover:underline" {...p} />
+    ) : (
+      <a href={href} className="text-indigo-400 hover:underline" target="_blank" rel="noopener noreferrer" {...p} />
+    );
+  },
   strong: ({ node: _n, ...p }) => <strong className="font-semibold text-slate-100" {...p} />,
   em: ({ node: _n, ...p }) => <em className="italic" {...p} />,
   blockquote: ({ node: _n, ...p }) => (
