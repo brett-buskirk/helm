@@ -265,7 +265,7 @@ export function ProjectForm({ project, lockedClientId, isOpen, onClose, onSucces
             </FormField>
 
             <FormField label="Description" htmlFor="description" className="col-span-2">
-              <Textarea id="description" rows={3} placeholder="Scope, goals, context…" {...register('description')} />
+              <Textarea id="description" rows={3} autoGrow placeholder="Scope, goals, context…" {...register('description')} />
             </FormField>
 
             {/* Links — repo, PRs, dashboards */}

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Controller, type Control, type FieldValues, type Path } from 'react-hook-form';
-import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { monthGrid } from '../../utils/date';
 import { parseDateInput, toDateInputValue, formatDate } from '../../utils/format';
 
@@ -91,24 +91,44 @@ export function DatePicker({ value, onChange, id, placeholder = 'Select a date',
 
   return (
     <div ref={rootRef} className="relative">
-      <button
-        ref={triggerRef}
-        type="button"
-        id={id}
-        onClick={() => setOpen((o) => !o)}
-        aria-haspopup="dialog"
-        aria-expanded={open}
+      <div
         className={[
-          'flex w-full items-center justify-between rounded-md border bg-slate-900 px-3 py-2 text-left text-sm transition-colors',
-          'focus:outline-none focus:ring-2 focus:ring-indigo-500',
+          'flex w-full items-center rounded-md border bg-slate-900 text-sm transition-colors',
+          'focus-within:ring-2 focus-within:ring-indigo-500',
           hasError ? 'border-red-500' : 'border-slate-700 hover:border-slate-600',
         ].join(' ')}
       >
-        <span className={selected ? 'text-slate-100' : 'text-slate-500'}>
-          {selected ? formatDate(selected) : placeholder}
-        </span>
-        <Calendar size={15} className="shrink-0 text-slate-500" />
-      </button>
+        <button
+          ref={triggerRef}
+          type="button"
+          id={id}
+          onClick={() => setOpen((o) => !o)}
+          aria-haspopup="dialog"
+          aria-expanded={open}
+          className="flex-1 px-3 py-2 text-left focus:outline-none"
+        >
+          <span className={selected ? 'text-slate-100' : 'text-slate-500'}>
+            {selected ? formatDate(selected) : placeholder}
+          </span>
+        </button>
+        {selected ? (
+          <button
+            type="button"
+            onClick={() => {
+              onChange('');
+              setOpen(false);
+            }}
+            aria-label="Clear date"
+            className="shrink-0 px-2.5 py-2 text-slate-500 transition-colors hover:text-red-400 focus:outline-none focus-visible:text-red-400"
+          >
+            <X size={15} />
+          </button>
+        ) : (
+          <span className="shrink-0 px-3 text-slate-500" aria-hidden>
+            <Calendar size={15} />
+          </span>
+        )}
+      </div>
 
       {open && (
         <div

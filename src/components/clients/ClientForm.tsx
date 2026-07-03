@@ -194,7 +194,7 @@ export function ClientForm({ client, isOpen, onClose, onSuccess }: ClientFormPro
             </FormField>
 
             <FormField label="Notes" htmlFor="notes" className="col-span-2">
-              <Textarea id="notes" rows={3} placeholder="Internal notes about this client…" {...register('notes')} />
+              <Textarea id="notes" rows={3} autoGrow placeholder="Internal notes about this client…" {...register('notes')} />
             </FormField>
           </div>
         </div>

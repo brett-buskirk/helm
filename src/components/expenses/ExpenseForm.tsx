@@ -223,7 +223,7 @@ export function ExpenseForm({ expense, isOpen, onClose, onSuccess, preselectedCl
         )}
 
         <FormField label="Notes" htmlFor="exp-notes" hint="Optional">
-          <Textarea id="exp-notes" rows={3} placeholder="Any additional context…" {...register('notes')} />
+          <Textarea id="exp-notes" rows={3} autoGrow placeholder="Any additional context…" {...register('notes')} />
         </FormField>
       </form>
     </Drawer>
