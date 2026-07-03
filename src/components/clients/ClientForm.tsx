@@ -10,6 +10,7 @@ import { Input } from '../ui/Input';
 import { Textarea } from '../ui/Textarea';
 import { Select } from '../ui/Select';
 import { FormField } from '../ui/FormField';
+import { PhoneInput } from '../ui/PhoneInput';
 
 const schema = z.object({
   company: z.string().min(1, 'Required'),
@@ -48,6 +49,7 @@ export function ClientForm({ client, isOpen, onClose, onSuccess }: ClientFormPro
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -176,7 +178,7 @@ export function ClientForm({ client, isOpen, onClose, onSuccess }: ClientFormPro
             </FormField>
 
             <FormField label="Phone" htmlFor="phone">
-              <Input id="phone" type="tel" {...register('phone')} />
+              <PhoneInput control={control} name="phone" id="phone" />
             </FormField>
 
             <FormField label="Default Hourly Rate" htmlFor="defaultRate" hint="Used for hourly projects without a specific rate" error={errors.defaultRate?.message}>

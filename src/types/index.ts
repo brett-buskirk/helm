@@ -1,6 +1,6 @@
 export type ClientStatus = 'lead' | 'active' | 'past';
 export type ProjectType = 'fixed' | 'retainer' | 'hourly';
-export type ProjectStatus = 'active' | 'paused' | 'completed' | 'cancelled';
+export type ProjectStatus = 'lead' | 'active' | 'paused' | 'completed' | 'cancelled';
 export type ProposalStatus = 'draft' | 'sent' | 'accepted' | 'declined';
 export type AgreementStatus = 'draft' | 'active' | 'completed' | 'cancelled';
 export type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';

@@ -178,6 +178,7 @@ const CLIENT_STATUS_BADGE = {
 };
 
 const PROJECT_STATUS_BADGE: Record<ProjectStatus, { variant: 'success' | 'warning' | 'info' | 'danger' | 'neutral'; label: string }> = {
+  lead: { variant: 'neutral', label: 'Lead' },
   active: { variant: 'success', label: 'Active' },
   paused: { variant: 'warning', label: 'Paused' },
   completed: { variant: 'info', label: 'Completed' },
