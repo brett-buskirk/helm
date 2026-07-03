@@ -67,6 +67,20 @@ export function monthLabel(date: Date): string {
   return date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
 }
 
+/**
+ * Returns the 42 days (6 weeks, Sunday-first) that fill a month-view calendar
+ * grid for the given year/month — includes trailing days from the adjacent
+ * months so the grid is always rectangular.
+ */
+export function monthGrid(year: number, month: number): Date[] {
+  const firstWeekday = new Date(year, month, 1).getDay(); // 0 = Sunday
+  const start = new Date(year, month, 1 - firstWeekday);
+  return Array.from(
+    { length: 42 },
+    (_, i) => new Date(start.getFullYear(), start.getMonth(), start.getDate() + i),
+  );
+}
+
 /** Returns an array of the last N months (oldest first), each as a Date at the 1st of that month. */
 export function lastNMonths(n: number, now = new Date()): Date[] {
   const months: Date[] = [];

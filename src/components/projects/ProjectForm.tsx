@@ -12,6 +12,7 @@ import { Input } from '../ui/Input';
 import { Textarea } from '../ui/Textarea';
 import { Select } from '../ui/Select';
 import { FormField } from '../ui/FormField';
+import { DateField } from '../ui/DatePicker';
 import { toDateInputValue, parseDateInput } from '../../utils/format';
 import { normalizeUrl, linkHost } from '../../utils/links';
 
@@ -238,11 +239,11 @@ export function ProjectForm({ project, lockedClientId, isOpen, onClose, onSucces
             </FormField>
 
             <FormField label="Start Date" htmlFor="startDate">
-              <Input id="startDate" type="date" {...register('startDate')} />
+              <DateField control={control} name="startDate" id="startDate" />
             </FormField>
 
             <FormField label="End Date" htmlFor="endDate">
-              <Input id="endDate" type="date" {...register('endDate')} />
+              <DateField control={control} name="endDate" id="endDate" />
             </FormField>
 
             <FormField

@@ -11,6 +11,7 @@ import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Textarea } from '../ui/Textarea';
 import { FormField } from '../ui/FormField';
+import { DateField } from '../ui/DatePicker';
 import { toDateInputValue, parseDateInput } from '../../utils/format';
 
 const schema = z.object({
@@ -53,6 +54,7 @@ export function ExpenseForm({ expense, isOpen, onClose, onSuccess, preselectedCl
 
   const {
     register,
+    control,
     handleSubmit,
     watch,
     reset,
@@ -168,7 +170,7 @@ export function ExpenseForm({ expense, isOpen, onClose, onSuccess, preselectedCl
       <form id="expense-form" onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
           <FormField label="Date" htmlFor="exp-date" error={errors.date?.message} required>
-            <Input id="exp-date" type="date" {...register('date')} error={errors.date?.message} />
+            <DateField control={control} name="date" id="exp-date" hasError={!!errors.date} />
           </FormField>
           <FormField label="Amount" htmlFor="exp-amount" error={errors.amount?.message} required>
             <Input

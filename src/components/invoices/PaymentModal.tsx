@@ -9,6 +9,7 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Textarea } from '../ui/Textarea';
 import { FormField } from '../ui/FormField';
+import { DateField } from '../ui/DatePicker';
 import { formatCurrency, toDateInputValue } from '../../utils/format';
 import { parseDateInput } from '../../utils/format';
 
@@ -31,6 +32,7 @@ interface PaymentModalProps {
 export function PaymentModal({ invoice, isOpen, onClose, onSuccess }: PaymentModalProps) {
   const {
     register,
+    control,
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
@@ -108,7 +110,7 @@ export function PaymentModal({ invoice, isOpen, onClose, onSuccess }: PaymentMod
         </p>
         <div className="space-y-4">
           <FormField label="Payment Date" htmlFor="pay-date" error={errors.date?.message} required>
-            <Input id="pay-date" type="date" {...register('date')} error={errors.date?.message} />
+            <DateField control={control} name="date" id="pay-date" hasError={!!errors.date} />
           </FormField>
           <FormField label="Amount" htmlFor="pay-amount" error={errors.amount?.message} required>
             <Input
