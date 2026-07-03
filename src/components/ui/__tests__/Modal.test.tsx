@@ -53,4 +53,16 @@ describe('Modal', () => {
     const dialog = screen.getByRole('dialog');
     expect(dialog.contains(document.activeElement)).toBe(true);
   });
+
+  it('puts the body in a height-capped, scrollable container (long content stays in the viewport)', () => {
+    render(
+      <Modal isOpen onClose={() => {}} title="Long">
+        <p>body content</p>
+      </Modal>,
+    );
+    const body = screen.getByText('body content').parentElement;
+    expect(body?.className).toContain('overflow-y-auto');
+    const panel = screen.getByRole('dialog').querySelector('.max-h-\\[90vh\\]');
+    expect(panel).not.toBeNull();
+  });
 });

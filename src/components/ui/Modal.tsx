@@ -50,12 +50,11 @@ export function Modal({ isOpen, onClose, title, children, size = 'md', footer }:
       <div
         ref={trapRef}
         className={[
-          'relative w-full rounded-xl border border-slate-700 bg-slate-850 shadow-2xl',
-          'bg-slate-800',
+          'relative flex max-h-[90vh] w-full flex-col rounded-xl border border-slate-700 bg-slate-800 shadow-2xl',
           sizeClasses[size],
         ].join(' ')}
       >
-        <div className="flex items-center justify-between border-b border-slate-700 px-5 py-4">
+        <div className="flex shrink-0 items-center justify-between border-b border-slate-700 px-5 py-4">
           <h2 id="modal-title" className="text-base font-semibold text-slate-100">
             {title}
           </h2>
@@ -67,9 +66,11 @@ export function Modal({ isOpen, onClose, title, children, size = 'md', footer }:
             <X size={18} />
           </button>
         </div>
-        <div className="px-5 py-4">{children}</div>
+        {/* min-h-0 lets this flex child shrink so its own scrollbar appears,
+            instead of the whole modal growing past the viewport. */}
+        <div className="min-h-0 overflow-y-auto px-5 py-4">{children}</div>
         {footer && (
-          <div className="flex justify-end gap-3 border-t border-slate-700 px-5 py-4">
+          <div className="flex shrink-0 justify-end gap-3 border-t border-slate-700 px-5 py-4">
             {footer}
           </div>
         )}
