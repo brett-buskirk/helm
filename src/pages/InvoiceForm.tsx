@@ -12,6 +12,7 @@ import { Input } from '../components/ui/Input';
 import { Textarea } from '../components/ui/Textarea';
 import { Select } from '../components/ui/Select';
 import { FormField } from '../components/ui/FormField';
+import { DateField } from '../components/ui/DatePicker';
 import { Toast } from '../components/ui/Toast';
 import { useToast } from '../hooks/useToast';
 import { formatCurrency, toDateInputValue, parseDateInput } from '../utils/format';
@@ -449,10 +450,10 @@ export default function InvoiceForm() {
 
               <div className="grid grid-cols-2 gap-3">
                 <FormField label="Issue Date" htmlFor="issueDate" error={errors.issueDate?.message} required>
-                  <Input id="issueDate" type="date" {...register('issueDate')} error={errors.issueDate?.message} />
+                  <DateField control={control} name="issueDate" id="issueDate" hasError={!!errors.issueDate} />
                 </FormField>
                 <FormField label="Due Date" htmlFor="dueDate" error={errors.dueDate?.message} required>
-                  <Input id="dueDate" type="date" {...register('dueDate')} error={errors.dueDate?.message} />
+                  <DateField control={control} name="dueDate" id="dueDate" hasError={!!errors.dueDate} />
                 </FormField>
               </div>
 

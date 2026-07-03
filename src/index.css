@@ -25,4 +25,28 @@ body {
     outline-offset: 2px;
     border-radius: 2px;
   }
+
+  /* Always-visible, styled scrollbars. The WSL WebKit webview hides overlay
+     scrollbars by default, so long content (e.g. a project description) looks
+     like it can't be scrolled. Style them so they're clearly there. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #475569 transparent; /* slate-600 thumb */
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: #475569; /* slate-600 */
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: #64748b; /* slate-500 */
+  }
 }

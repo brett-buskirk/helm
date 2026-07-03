@@ -11,6 +11,7 @@ import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Textarea } from '../ui/Textarea';
 import { FormField } from '../ui/FormField';
+import { DateField } from '../ui/DatePicker';
 import { toDateInputValue, parseDateInput } from '../../utils/format';
 
 const schema = z.object({
@@ -47,6 +48,7 @@ export function TimeEntryForm({
 
   const {
     register,
+    control,
     handleSubmit,
     watch,
     reset,
@@ -160,7 +162,7 @@ export function TimeEntryForm({
 
         <div className="grid grid-cols-2 gap-3">
           <FormField label="Date" htmlFor="time-date" error={errors.date?.message} required>
-            <Input id="time-date" type="date" {...register('date')} error={errors.date?.message} />
+            <DateField control={control} name="date" id="time-date" hasError={!!errors.date} />
           </FormField>
           <FormField label="Hours" htmlFor="time-hours" error={errors.hours?.message} required>
             <Input

@@ -12,6 +12,7 @@ import { Input } from '../components/ui/Input';
 import { Textarea } from '../components/ui/Textarea';
 import { Select } from '../components/ui/Select';
 import { FormField } from '../components/ui/FormField';
+import { DateField } from '../components/ui/DatePicker';
 import { Toast } from '../components/ui/Toast';
 import { useToast } from '../hooks/useToast';
 import { toDateInputValue, parseDateInput } from '../utils/format';
@@ -58,6 +59,7 @@ export default function ProposalForm() {
 
   const {
     register,
+    control,
     handleSubmit,
     watch,
     reset,
@@ -249,7 +251,7 @@ export default function ProposalForm() {
             </FormField>
 
             <FormField label="Valid Until" htmlFor="validUntil">
-              <Input id="validUntil" type="date" {...register('validUntil')} />
+              <DateField control={control} name="validUntil" id="validUntil" />
             </FormField>
           </div>
 

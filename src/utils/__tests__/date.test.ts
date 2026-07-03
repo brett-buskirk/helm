@@ -10,6 +10,7 @@ import {
   coerceDate,
   isInPeriod,
   lastNMonths,
+  monthGrid,
 } from '../date';
 
 // Fixed reference date: June 15, 2026
@@ -169,5 +170,17 @@ describe('lastNMonths', () => {
     lastNMonths(6, REF).forEach((d) => {
       expect(d.getDate()).toBe(1);
     });
+  });
+});
+
+describe('monthGrid', () => {
+  test('returns a 6-week Sunday-first grid covering the whole month', () => {
+    const grid = monthGrid(2026, 1); // February 2026 (28 days)
+    expect(grid).toHaveLength(42);
+    expect(grid[0].getDay()).toBe(0); // starts on a Sunday
+    const inMonth = grid.filter((d) => d.getMonth() === 1);
+    expect(inMonth).toHaveLength(28);
+    expect(inMonth[0].getDate()).toBe(1);
+    expect(inMonth[inMonth.length - 1].getDate()).toBe(28);
   });
 });
