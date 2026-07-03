@@ -2,6 +2,7 @@ import { Document, Page, Text, View, Image, StyleSheet } from '@react-pdf/render
 import type { Proposal, Client, Project, Settings } from '../../types';
 import { formatCurrency, formatDate } from '../../utils/format';
 import { brandColor, initials } from '../../utils/pdf';
+import { renderMarkdownPdf } from '../../utils/markdownPdf';
 
 function makeStyles(accent: string) {
   return StyleSheet.create({
@@ -101,13 +102,13 @@ export function ProposalPDF({ proposal, client, project, settings }: Props) {
         {/* Scope */}
         <View style={{ marginBottom: 20 }}>
           <Text style={styles.sectionTitle}>Scope of Work</Text>
-          <Text style={styles.body}>{proposal.scope}</Text>
+          {renderMarkdownPdf(proposal.scope, accent)}
         </View>
 
         {/* Deliverables */}
         <View style={{ marginBottom: 20 }}>
           <Text style={styles.sectionTitle}>Deliverables</Text>
-          <Text style={styles.body}>{proposal.deliverables}</Text>
+          {renderMarkdownPdf(proposal.deliverables, accent)}
         </View>
 
         {/* Pricing */}

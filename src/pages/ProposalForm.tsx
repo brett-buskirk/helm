@@ -13,6 +13,7 @@ import { Textarea } from '../components/ui/Textarea';
 import { Select } from '../components/ui/Select';
 import { FormField } from '../components/ui/FormField';
 import { DateField } from '../components/ui/DatePicker';
+import { MarkdownField } from '../components/ui/MarkdownEditor';
 import { Toast } from '../components/ui/Toast';
 import { useToast } from '../hooks/useToast';
 import { toDateInputValue, parseDateInput } from '../utils/format';
@@ -196,12 +197,13 @@ export default function ProposalForm() {
           </FormField>
 
           <FormField label="Scope of Work" htmlFor="scope" error={errors.scope?.message} required>
-            <Textarea
+            <MarkdownField
+              control={control}
+              name="scope"
               id="scope"
-              rows={5}
-              autoGrow
-              placeholder="Describe the work, background, and objectives…"
-              {...register('scope')}
+              rows={6}
+              hasError={!!errors.scope}
+              placeholder="Describe the work, background, and objectives… (markdown supported)"
             />
           </FormField>
 
@@ -211,12 +213,13 @@ export default function ProposalForm() {
             error={errors.deliverables?.message}
             required
           >
-            <Textarea
+            <MarkdownField
+              control={control}
+              name="deliverables"
               id="deliverables"
-              rows={5}
-              autoGrow
-              placeholder="List the concrete outputs the client will receive…"
-              {...register('deliverables')}
+              rows={6}
+              hasError={!!errors.deliverables}
+              placeholder="List the concrete outputs the client will receive… (markdown supported)"
             />
           </FormField>
 
