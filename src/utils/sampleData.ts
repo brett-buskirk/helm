@@ -278,6 +278,13 @@ export async function loadSampleData(): Promise<void> {
     ],
     createdAt: monthStart(1), updatedAt: daysAgo(5),
   });
+  // A prospect still in negotiation — shows the "Lead" project status.
+  await insert(db.projects, {
+    ...DEMO, clientId: trailhead, name: 'IaC Adoption — Terraform + Ansible', type: 'fixed',
+    status: 'lead', rate: 8500,
+    description: 'Proposed engagement (deciding): codify their environment with Terraform + Ansible, add a Tailscale-managed plane, and hand off runbooks. Not yet started.',
+    createdAt: daysAgo(9), updatedAt: daysAgo(2),
+  });
 
   // ── Proposals (every status) ────────────────────────────────────────────────
   await db.proposals.bulkAdd([

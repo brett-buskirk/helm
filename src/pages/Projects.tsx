@@ -18,7 +18,8 @@ import { ProjectLinks } from '../components/projects/ProjectLinks';
 import { useToast } from '../hooks/useToast';
 import { formatDate, formatProjectRate } from '../utils/format';
 
-const STATUS_BADGE: Record<ProjectStatus, { variant: 'success' | 'warning' | 'info' | 'danger'; label: string }> = {
+const STATUS_BADGE: Record<ProjectStatus, { variant: 'success' | 'warning' | 'info' | 'danger' | 'neutral'; label: string }> = {
+  lead: { variant: 'neutral', label: 'Lead' },
   active: { variant: 'success', label: 'Active' },
   paused: { variant: 'warning', label: 'Paused' },
   completed: { variant: 'info', label: 'Completed' },
@@ -27,6 +28,7 @@ const STATUS_BADGE: Record<ProjectStatus, { variant: 'success' | 'warning' | 'in
 
 const STATUS_FILTER_OPTIONS: { value: ProjectStatus | 'all'; label: string }[] = [
   { value: 'all', label: 'All' },
+  { value: 'lead', label: 'Lead' },
   { value: 'active', label: 'Active' },
   { value: 'paused', label: 'Paused' },
   { value: 'completed', label: 'Completed' },

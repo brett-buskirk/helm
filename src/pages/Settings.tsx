@@ -7,6 +7,7 @@ import { Plus, X, Download, Upload, Sparkles, Lock, ShieldCheck, ShieldOff, Imag
 import { db, DEFAULT_EXPENSE_CATEGORIES } from '../db';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import { PhoneInput } from '../components/ui/PhoneInput';
 import { Textarea } from '../components/ui/Textarea';
 import { FormField } from '../components/ui/FormField';
 import { Modal } from '../components/ui/Modal';
@@ -93,6 +94,7 @@ export default function Settings() {
     reset,
     watch,
     setValue,
+    control,
     formState: { errors },
   } = useForm<SettingsFormData>({
     resolver: zodResolver(settingsSchema),
@@ -350,7 +352,7 @@ export default function Settings() {
                 <Input id="email" type="email" {...register('email')} error={errors.email?.message} />
               </FormField>
               <FormField label="Phone" htmlFor="phone" hint="Optional">
-                <Input id="phone" type="tel" {...register('phone')} />
+                <PhoneInput control={control} name="phone" id="phone" />
               </FormField>
               <FormField label="Website" htmlFor="website" hint="Optional">
                 <Input id="website" type="url" placeholder="https://" {...register('website')} />

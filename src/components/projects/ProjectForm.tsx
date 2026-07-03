@@ -19,7 +19,7 @@ const schema = z.object({
   clientId: z.coerce.number().min(1, 'Required'),
   name: z.string().min(1, 'Required'),
   type: z.enum(['fixed', 'retainer', 'hourly']),
-  status: z.enum(['active', 'paused', 'completed', 'cancelled']),
+  status: z.enum(['lead', 'active', 'paused', 'completed', 'cancelled']),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
   rate: z.preprocess(
@@ -47,6 +47,7 @@ const TYPE_OPTIONS = [
 ];
 
 const STATUS_OPTIONS = [
+  { value: 'lead', label: 'Lead' },
   { value: 'active', label: 'Active' },
   { value: 'paused', label: 'Paused' },
   { value: 'completed', label: 'Completed' },
