@@ -197,7 +197,7 @@ export default function DocumentEditor() {
             />
           </FormField>
 
-          <div className="mt-4 flex flex-1 flex-col">
+          <div className="mt-4 flex min-h-0 flex-1 flex-col">
             <div className="mb-1.5 flex items-center justify-between">
               <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                 Content
@@ -237,7 +237,7 @@ export default function DocumentEditor() {
               <p className="mb-1 text-xs text-red-400">{errors.content.message}</p>
             )}
             {docPreview ? (
-              <div className="flex-1 overflow-y-auto rounded-lg border border-slate-700 bg-slate-950 p-4">
+              <div className="min-h-0 flex-1 overflow-y-auto rounded-lg border border-slate-700 bg-slate-950 p-4">
                 <MarkdownPreview content={watch('content')} />
               </div>
             ) : (
