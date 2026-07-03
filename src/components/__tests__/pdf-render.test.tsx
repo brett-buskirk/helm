@@ -50,8 +50,8 @@ const invoice = {
 const proposal = {
   clientId: 1,
   title: 'Cloud Foundation',
-  scope: 'Scope here',
-  deliverables: 'Deliverables here',
+  scope: '## Scope\n\nA **fixed-fee** engagement:\n\n1. Discovery\n2. Build',
+  deliverables: '- Terraform modules\n- Runbooks\n- [Repo](https://github.com/x/y)',
   pricing: 12000,
   status: 'sent',
   createdAt: new Date(),
@@ -61,7 +61,7 @@ const proposal = {
 const doc = {
   type: 'sow',
   title: 'SOW — Acme',
-  content: 'Line one\n\nLine two',
+  content: '# Statement of Work\n\nCovers **infrastructure**:\n\n- VPC setup\n- Monitoring\n\n> Phased delivery.',
   isTemplate: false,
   createdAt: new Date(),
   updatedAt: new Date(),

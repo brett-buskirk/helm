@@ -1,6 +1,7 @@
 import { Document, Page, Text, View, Image, StyleSheet } from '@react-pdf/renderer';
 import type { Document as Doc, Settings } from '../../types';
 import { brandColor, initials } from '../../utils/pdf';
+import { renderMarkdownPdf } from '../../utils/markdownPdf';
 
 const DOC_TYPE_LABEL: Record<string, string> = {
   msa: 'Master Services Agreement',
@@ -98,8 +99,6 @@ export function DocumentPDF({ doc, settings }: Props) {
   const accent = brandColor(settings);
   const logo = settings?.logo;
 
-  // Split content into paragraphs (double newline), then lines within each
-  const paragraphs = doc.content.split(/\n\n+/);
 
   return (
     <Document>
@@ -120,23 +119,8 @@ export function DocumentPDF({ doc, settings }: Props) {
           {bizName ? <Text style={s.meta}>{bizName}</Text> : null}
         </View>
 
-        {/* Content */}
-        {paragraphs.map((para, pi) => {
-          const lines = para.split('\n');
-          return (
-            <View key={pi} style={s.paragraph}>
-              {lines.map((line, li) =>
-                line.trim() === '' ? (
-                  <Text key={li} style={s.emptyLine}> </Text>
-                ) : (
-                  <Text key={li} style={s.line}>
-                    {line}
-                  </Text>
-                ),
-              )}
-            </View>
-          );
-        })}
+        {/* Content (markdown) */}
+        {renderMarkdownPdf(doc.content, accent)}
 
         {/* Footer */}
         <View style={s.footer} fixed>

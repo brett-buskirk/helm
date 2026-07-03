@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -11,6 +11,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
 import { FormField } from '../components/ui/FormField';
+import { MarkdownPreview } from '../components/ui/MarkdownPreview';
 import { Toast } from '../components/ui/Toast';
 import { useToast } from '../hooks/useToast';
 import { TEMPLATE_VARS, DEFAULT_TEMPLATES } from '../utils/template';
@@ -150,6 +151,7 @@ export default function DocumentEditor() {
   ];
 
   const contentField = register('content');
+  const [docPreview, setDocPreview] = useState(false);
 
   return (
     <div className="flex h-full flex-col">
@@ -200,29 +202,57 @@ export default function DocumentEditor() {
               <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                 Content
               </label>
-              <button
-                type="button"
-                onClick={loadStarter}
-                className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
-              >
-                <Sparkles size={11} />
-                Load starter template
-              </button>
+              <div className="flex items-center gap-3">
+                {!docPreview && (
+                  <button
+                    type="button"
+                    onClick={loadStarter}
+                    className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
+                  >
+                    <Sparkles size={11} />
+                    Load starter template
+                  </button>
+                )}
+                <div className="flex items-center gap-0.5 rounded-md border border-slate-700 p-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setDocPreview(false)}
+                    aria-pressed={!docPreview}
+                    className={['rounded px-2 py-0.5 text-xs font-medium transition-colors', !docPreview ? 'bg-slate-700 text-slate-100' : 'text-slate-400 hover:text-slate-200'].join(' ')}
+                  >
+                    Write
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDocPreview(true)}
+                    aria-pressed={docPreview}
+                    className={['rounded px-2 py-0.5 text-xs font-medium transition-colors', docPreview ? 'bg-slate-700 text-slate-100' : 'text-slate-400 hover:text-slate-200'].join(' ')}
+                  >
+                    Preview
+                  </button>
+                </div>
+              </div>
             </div>
             {errors.content && (
               <p className="mb-1 text-xs text-red-400">{errors.content.message}</p>
             )}
-            <textarea
-              id="doc-content"
-              {...contentField}
-              ref={(el) => {
-                contentField.ref(el);
-                (textareaRef as React.MutableRefObject<HTMLTextAreaElement | null>).current = el;
-              }}
-              className="flex-1 resize-none rounded-lg border border-slate-700 bg-slate-950 p-4 font-mono text-sm leading-relaxed text-slate-200 placeholder-slate-600 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-              placeholder="Start writing, or click 'Load starter template' above…"
-              spellCheck={false}
-            />
+            {docPreview ? (
+              <div className="flex-1 overflow-y-auto rounded-lg border border-slate-700 bg-slate-950 p-4">
+                <MarkdownPreview content={watch('content')} />
+              </div>
+            ) : (
+              <textarea
+                id="doc-content"
+                {...contentField}
+                ref={(el) => {
+                  contentField.ref(el);
+                  (textareaRef as React.MutableRefObject<HTMLTextAreaElement | null>).current = el;
+                }}
+                className="flex-1 resize-none rounded-lg border border-slate-700 bg-slate-950 p-4 font-mono text-sm leading-relaxed text-slate-200 placeholder-slate-600 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                placeholder="Start writing, or click 'Load starter template' above…"
+                spellCheck={false}
+              />
+            )}
           </div>
         </div>
 
