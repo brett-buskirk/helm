@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -12,6 +12,7 @@ import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
 import { FormField } from '../components/ui/FormField';
 import { MarkdownPreview } from '../components/ui/MarkdownPreview';
+import { MentionTextarea } from '../components/ui/MentionTextarea';
 import { Toast } from '../components/ui/Toast';
 import { useToast } from '../hooks/useToast';
 import { TEMPLATE_VARS, DEFAULT_TEMPLATES } from '../utils/template';
@@ -58,6 +59,7 @@ export default function DocumentEditor() {
 
   const {
     register,
+    control,
     handleSubmit,
     watch,
     setValue,
@@ -150,7 +152,6 @@ export default function DocumentEditor() {
     ...clientProjects.map((p) => ({ value: String(p.id), label: p.name })),
   ];
 
-  const contentField = register('content');
   const [docPreview, setDocPreview] = useState(false);
 
   return (
@@ -241,16 +242,24 @@ export default function DocumentEditor() {
                 <MarkdownPreview content={watch('content')} />
               </div>
             ) : (
-              <textarea
-                id="doc-content"
-                {...contentField}
-                ref={(el) => {
-                  contentField.ref(el);
-                  (textareaRef as React.MutableRefObject<HTMLTextAreaElement | null>).current = el;
-                }}
-                className="flex-1 resize-none rounded-lg border border-slate-700 bg-slate-950 p-4 font-mono text-sm leading-relaxed text-slate-200 placeholder-slate-600 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-                placeholder="Start writing, or click 'Load starter template' above…"
-                spellCheck={false}
+              <Controller
+                name="content"
+                control={control}
+                render={({ field }) => (
+                  <MentionTextarea
+                    id="doc-content"
+                    value={field.value}
+                    onChange={field.onChange}
+                    ref={(el) => {
+                      field.ref(el);
+                      (textareaRef as React.MutableRefObject<HTMLTextAreaElement | null>).current = el;
+                    }}
+                    wrapperClassName="flex min-h-0 flex-1 flex-col"
+                    className="min-h-0 flex-1 resize-none rounded-lg border border-slate-700 bg-slate-950 p-4 font-mono text-sm leading-relaxed text-slate-200 placeholder-slate-600 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                    placeholder="Start writing, or click 'Load starter template' above… (@ to link a resource)"
+                    spellCheck={false}
+                  />
+                )}
               />
             )}
           </div>

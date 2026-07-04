@@ -7,6 +7,7 @@ import { db } from '../db';
 import type { ProposalStatus } from '../types';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
+import { MarkdownPreview } from '../components/ui/MarkdownPreview';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { Toast } from '../components/ui/Toast';
 import { ProposalPDF } from '../components/proposals/ProposalPDF';
@@ -190,9 +191,15 @@ export default function ProposalDetail() {
           {/* Main content */}
           <div className="space-y-6">
             <div className="rounded-xl border border-slate-700 bg-slate-800 p-6 space-y-5">
-              <Field label="Scope of Work">{proposal.scope}</Field>
+              <div>
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-500">Scope of Work</p>
+                <MarkdownPreview content={proposal.scope} />
+              </div>
               <div className="border-t border-slate-700" />
-              <Field label="Deliverables">{proposal.deliverables}</Field>
+              <div>
+                <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-500">Deliverables</p>
+                <MarkdownPreview content={proposal.deliverables} />
+              </div>
               {proposal.notes && (
                 <>
                   <div className="border-t border-slate-700" />

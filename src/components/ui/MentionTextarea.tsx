@@ -9,6 +9,7 @@ interface Props {
   placeholder?: string;
   rows?: number;
   className?: string;
+  wrapperClassName?: string;
   spellCheck?: boolean;
 }
 
@@ -29,7 +30,7 @@ const CLOSED: MentionState = { open: false, query: '', start: -1, index: 0, top:
  * and PDF. Controlled via value/onChange; forwards the inner textarea ref.
  */
 export const MentionTextarea = forwardRef<HTMLTextAreaElement, Props>(function MentionTextarea(
-  { value, onChange, className, ...rest },
+  { value, onChange, className, wrapperClassName, ...rest },
   ref,
 ) {
   const items = useMentionItems();
@@ -48,7 +49,16 @@ export const MentionTextarea = forwardRef<HTMLTextAreaElement, Props>(function M
   const filtered = useMemo(() => {
     if (!m.open) return [];
     const q = m.query.toLowerCase();
-    return items.filter((i) => i.label.toLowerCase().includes(q)).slice(0, 8);
+    // Cap per group so every resource type can appear (not just the first types).
+    const perGroup: Record<string, number> = {};
+    const out: MentionItem[] = [];
+    for (const item of items) {
+      if (!item.label.toLowerCase().includes(q)) continue;
+      const n = (perGroup[item.group] ?? 0) + 1;
+      perGroup[item.group] = n;
+      if (n <= 6) out.push(item);
+    }
+    return out;
   }, [m.open, m.query, items]);
 
   const detect = useCallback(() => {
@@ -105,7 +115,7 @@ export const MentionTextarea = forwardRef<HTMLTextAreaElement, Props>(function M
   }
 
   return (
-    <div className="relative">
+    <div className={['relative', wrapperClassName].filter(Boolean).join(' ')}>
       <textarea
         {...rest}
         ref={setRefs}
