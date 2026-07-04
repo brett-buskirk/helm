@@ -27,9 +27,7 @@ export function useMentionItems(): MentionItem[] {
       ...clients.map((c) => ({ id: `cli-${c.id}`, label: c.company, href: `#/clients/${c.id}`, group: 'Client' })),
       ...proposals.map((p) => ({ id: `pro-${p.id}`, label: p.title, href: `#/proposals/${p.id}`, group: 'Proposal' })),
       ...projects.map((p) => ({ id: `prj-${p.id}`, label: p.name, href: `#/clients/${p.clientId}`, group: 'Project' })),
-      ...documents
-        .filter((d) => !d.isTemplate)
-        .map((d) => ({ id: `doc-${d.id}`, label: d.title, href: `#/documents/${d.id}/edit`, group: 'Document' })),
+      ...documents.map((d) => ({ id: `doc-${d.id}`, label: d.title, href: `#/documents/${d.id}/edit`, group: 'Document' })),
     ],
     [invoices, clients, projects, proposals, documents],
   );
