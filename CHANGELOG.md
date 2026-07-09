@@ -6,11 +6,12 @@ All notable changes to helm are documented here. The format is based on
 
 ## [Unreleased]
 
-The first release candidate — feature-complete across all planned phases and
-live as a PWA at <https://helm-d5s.pages.dev/>. Tagging `v1.0.0` is the last
-step; when it's cut, rename this heading to `## [1.0.0] - YYYY-MM-DD`.
+_Nothing yet._
 
-Helm is distributed as an installable, offline-capable PWA; the Tauri desktop
+## [1.0.0] - 2026-07-09
+
+First tagged release. Helm is live as an installable, offline-capable PWA at
+<https://helm-d5s.pages.dev/> (hosted on Cloudflare Pages); the Tauri desktop
 wrapper is retained as a deferred, optional native shell (see
 [ADR 0001](docs/adr/0001-ship-as-pwa-defer-native-installers.md)).
 
