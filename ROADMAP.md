@@ -11,10 +11,24 @@ plus a short list of genuine automation nice-to-haves. Nothing here is a rewrite
 
 ## Toward a 1.0 release
 
+Helm ships as its **installable PWA**, not as signed native installers — see
+[ADR 0001](docs/adr/0001-ship-as-pwa-defer-native-installers.md) for why (it's a
+local-first, single-user tool; paid code-signing and per-OS installer packaging
+add friction that local-first is meant to avoid). The Tauri wrapper stays in the
+repo as a deferred, optional native shell.
+
 - [ ] Cut the first tagged release (`v1.0.0`) and start populating `CHANGELOG.md`
       with real dated sections.
+- [ ] Deploy the production build to static hosting (host serves only the app
+      shell; all data stays local in IndexedDB) and document browser install.
+- [ ] Wire the web build + deploy into CI so a push publishes the hosted PWA.
+
+### Deferred — native installers (optional, not on the 1.0 path)
+
+Kept as a future option; requires paid signing certs + hosting decisions.
+
 - [ ] Produce signed, per-platform Tauri installers (macOS `.dmg`, Windows
-      `.msi`/NSIS, Linux `.AppImage`/`.deb`) and attach them to the GitHub release.
+      `.msi`/NSIS, Linux `.AppImage`/`.deb`) and attach them to a GitHub release.
 - [ ] Wire installer packaging into CI so a tag push builds and publishes the
       bundles automatically.
 
