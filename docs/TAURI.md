@@ -8,14 +8,24 @@ The same React/Vite frontend powers both — Tauri just hosts the built `dist/`
 in a native webview. Because the app uses **hash routing**, no routing or server
 changes were needed to run inside Tauri.
 
+> **The PWA is the shipped product; the desktop build is deferred/optional.**
+> Helm is distributed as its installable PWA — see
+> [ADR 0001](adr/0001-ship-as-pwa-defer-native-installers.md). The Tauri wrapper
+> is kept in the repo as an optional native shell (paid code-signing and per-OS
+> installer packaging are out of scope for a local-first, single-user tool), so
+> the build steps below still work but aren't part of the release path.
+
 > **Status — what this does and doesn't do yet**
-> - ✅ Native desktop window, app icon, installers per platform.
-> - ✅ Opens `mailto:` and external links via the OS (the `opener` plugin).
-> - 🚧 **Persistence is still IndexedDB** inside the webview. Your data lives in
->   the app's local webview storage; back it up with the in-app JSON export.
-> - 🚧 **Encryption at rest is NOT here yet.** The planned follow-up migrates
->   persistence to SQLite + SQLCipher for an encrypted local database. Until
->   then, rely on OS full-disk encryption (see the data-security notes).
+> - ✅ Native desktop window, app icon, and per-platform installers (build them
+>   yourself; not signed or published — see ADR 0001).
+> - ✅ Opens `mailto:` and external links via the OS (the `opener` plugin), and
+>   saves PDFs through the native dialog + filesystem plugins.
+> - ✅ **Encryption at rest** works here too — it's the same opt-in, client-side
+>   scheme as the web build (tweetnacl field encryption + a PBKDF2 passphrase
+>   app-lock over IndexedDB), so no desktop-specific work is needed.
+> - 🚧 **Persistence is IndexedDB** inside the webview — a *separate* store from
+>   your browser's. Back it up with the in-app JSON export; to move data between
+>   the desktop app and the PWA, export from one and import into the other.
 
 ---
 
@@ -140,7 +150,16 @@ Vite settings only apply when the Tauri CLI sets `TAURI_ENV_*`.
 
 ## Roadmap from here
 
-1. **Native filesystem backups** — use Tauri's `fs`/`dialog` plugins for
-   one-click "Save backup to disk" and scheduled auto-export to a real folder.
-2. **Encrypted SQLite (SQLCipher)** — migrate persistence off IndexedDB to an
-   encrypted local database. This is the real data-at-rest security upgrade.
+The desktop wrapper is optional (see ADR 0001), so this is a "someday if the
+native path is worth it" list, not release-blocking work:
+
+1. **Native filesystem backups** — the `fs`/`dialog` plugins are already wired
+   (they back the PDF save dialog), so a one-click "Save backup to disk" and a
+   scheduled auto-export to a real folder are a small extension.
+2. **Signed, published installers** — code-signing + notarization + per-platform
+   distribution, only if Helm is ever handed to other users as a native app.
+
+> **Not planned: SQLCipher.** An earlier note here proposed migrating persistence
+> to encrypted SQLite. That was rejected — encryption at rest is already solved
+> client-side (opt-in tweetnacl + PBKDF2 over IndexedDB), which works in both the
+> PWA and the desktop webview without a storage-engine rewrite.
