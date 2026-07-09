@@ -1,0 +1,10 @@
+# Cloudflare Pages configuration for the Helm PWA.
+#
+# Pure static site (no Pages Functions): Cloudflare runs `npm run build` and
+# serves the Vite output in `dist/` from its global CDN. Only the app shell is
+# served — all data lives in the browser's IndexedDB (see docs/adr/0001).
+#
+# `pages_build_output_dir` tells Cloudflare where the build output lands; the
+# build command itself is set once when the repo is connected (docs/DEPLOY.md).
+name = "helm"
+pages_build_output_dir = "dist"

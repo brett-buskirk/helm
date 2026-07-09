@@ -4,8 +4,8 @@ import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
 // Set by the Tauri CLI during `tauri dev` / `tauri build`. When unset we're
-// doing a plain web build (the DigitalOcean deploy), so nothing below changes
-// the existing web output.
+// doing a plain web build (the Cloudflare Pages deploy), so nothing below
+// changes the existing web output.
 const isTauri = !!process.env.TAURI_ENV_PLATFORM
 const host = process.env.TAURI_DEV_HOST
 

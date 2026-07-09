@@ -29,9 +29,8 @@ exact friction that local-first is meant to avoid:
 
 None of this serves a single user running their own tool. A PWA, by contrast,
 installs from the browser, updates itself via the service worker, costs nothing
-to host, and keeps every byte of data on the user's machine. The web build
-already contemplates a static web deploy (the `vite.config.ts` and
-`docs/TAURI.md` comments reference a DigitalOcean deploy target).
+to host, and keeps every byte of data on the user's machine. The web build has
+always been the primary output, ready for a static deploy.
 
 ## Decision
 
@@ -87,3 +86,12 @@ into the browser PWA. One-time, using the existing backup/restore feature.
 - **Remove Tauri entirely.** Rejected: `src-tauri/` is isolated and costs nothing
   to keep. Retaining it preserves the option to distribute natively later and the
   portfolio story, at no ongoing burden.
+
+## Update — 2026-07-09: host is Cloudflare Pages
+
+The static host is **Cloudflare Pages**, not DigitalOcean App Platform (an
+earlier draft targeted DO). DO's free static-site tier — 3 per account — was
+already used up, and a fourth billed at ~$24/mo; Cloudflare Pages is free for a
+private repo, with no bandwidth caps, a free custom domain, and commercial use
+permitted. This refines only the *host*; the PWA-over-installers decision above
+is unchanged. See [`docs/DEPLOY.md`](../DEPLOY.md).
