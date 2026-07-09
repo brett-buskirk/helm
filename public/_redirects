@@ -1,0 +1,5 @@
+# Cloudflare Pages SPA fallback: serve the app shell for any path that isn't a
+# real static file. Helm uses hash routing, so this is belt-and-suspenders (the
+# real route lives in the URL fragment, which the server never sees) — but it
+# keeps a stray deep path from 404ing and future-proofs a switch to path routing.
+/*    /index.html    200

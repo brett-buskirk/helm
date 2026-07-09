@@ -19,10 +19,11 @@ repo as a deferred, optional native shell.
 
 - [ ] Cut the first tagged release (`v1.0.0`) and start populating `CHANGELOG.md`
       with real dated sections.
-- [ ] Deploy to **DigitalOcean App Platform** as a static site — spec committed
-      at [`.do/app.yaml`](.do/app.yaml), setup in [docs/DEPLOY.md](docs/DEPLOY.md).
+- [ ] Deploy to **Cloudflare Pages** as a static site — config committed at
+      [`wrangler.toml`](wrangler.toml), setup in [docs/DEPLOY.md](docs/DEPLOY.md).
       Remaining step is the one-time dashboard provisioning (connect the private
-      repo); after that `deploy_on_push` publishes every merge to `main`.
+      repo); after that every merge to `main` auto-publishes (and each PR gets a
+      free preview URL).
 - [ ] Document browser install (Add to Home Screen / Install app) in the README.
 
 ### Deferred — native installers (optional, not on the 1.0 path)

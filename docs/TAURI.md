@@ -143,8 +143,8 @@ Output lands in `src-tauri/target/release/bundle/`:
 | `src-tauri/build.rs` | Tauri build script |
 | `vite.config.ts` | Tauri-aware dev server + build targets (web build unchanged) |
 
-The web build (and the DigitalOcean deploy) are unaffected — the Tauri-specific
-Vite settings only apply when the Tauri CLI sets `TAURI_ENV_*`.
+The web build (and the Cloudflare Pages deploy) are unaffected — the Tauri-
+specific Vite settings only apply when the Tauri CLI sets `TAURI_ENV_*`.
 
 ---
 
