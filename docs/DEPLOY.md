@@ -1,5 +1,8 @@
 # Deploying Helm (Cloudflare Pages)
 
+> **Status: live** at **<https://helm-d5s.pages.dev/>** — provisioning is done.
+> The steps below are the setup record and how future changes deploy.
+
 Helm ships as an installable **PWA** — a static bundle served from a CDN. Only
 the app *shell* is hosted; all data lives in the browser's IndexedDB on the
 user's machine and never touches the host (see
@@ -29,9 +32,9 @@ existing PR gates *are* the deploy gate. There are **no Cloudflare secrets in
 GitHub** and no CI deploy step; Cloudflare's own build system runs
 `npm run build` and serves `dist/`.
 
-## One-time provisioning (dashboard) — Brett runs this
+## One-time provisioning (done)
 
-Connecting the private repo is an account-level action, done once by hand:
+Connecting the private repo was an account-level action, done once by hand:
 
 1. **[Cloudflare dashboard](https://dash.cloudflare.com) → Workers & Pages →
    Create → Pages → Connect to Git.**

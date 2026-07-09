@@ -34,13 +34,25 @@ Config lives in `.agentgate.yml`. Current policy:
 
 Only `secrets` and `dangerous_patterns` block a merge; everything else is advisory.
 
-### Expect warnings on the Phase 0 scaffold
+### Advisory warnings are normal
 
-The first scaffold PR (React / Vite / Dexie / PWA) will trip several **warnings** —
-large diff, new `package.json` + lockfile, source without tests yet. These are
-non-blocking and expected; the check still passes. Tune `.agentgate.yml` as the
-codebase matures — e.g. add a `scope.allow` list once `src/` exists, raise the
-`diff_size` limits for big scaffolds, or enable the intent check.
+Large or wide-ranging PRs may trip the advisory rules (diff size, lockfile /
+dependency changes, `src/**` touched without tests). These are **non-blocking** —
+the check still passes; only `secrets` and `dangerous_patterns` block a merge.
+Tune `.agentgate.yml` as needed (`scope.allow` lists, `diff_size` limits, or
+enabling the intent check).
+
+## CI runs on every PR
+
+A GitHub Actions workflow runs on each PR and must pass: **type-check** (`tsc`),
+**circular-import check** (`npm run check:cycles`, madge), **unit tests**
+(`npm run test:run`, Vitest), **build** (`npm run build`), and **e2e**
+(Playwright, which installs Chromium + deps and runs the smoke suite).
+
+## PR / issue conventions
+
+Every PR and issue is **assigned to Brett**, gets appropriate **labels**, is filed
+to a **milestone**, and is added to the **Estate** and **Helm** project boards.
 
 ## Repo facts
 

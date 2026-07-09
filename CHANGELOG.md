@@ -6,9 +6,9 @@ All notable changes to helm are documented here. The format is based on
 
 ## [Unreleased]
 
-The first release candidate — feature-complete across all planned phases. When
-this is cut, tagged (`v1.0.0`), and the PWA is deployed, rename this heading to
-`## [1.0.0] - YYYY-MM-DD`.
+The first release candidate — feature-complete across all planned phases and
+live as a PWA at <https://helm-d5s.pages.dev/>. Tagging `v1.0.0` is the last
+step; when it's cut, rename this heading to `## [1.0.0] - YYYY-MM-DD`.
 
 Helm is distributed as an installable, offline-capable PWA; the Tauri desktop
 wrapper is retained as a deferred, optional native shell (see
