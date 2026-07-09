@@ -1,7 +1,7 @@
 # Helm — Claude Code Build Brief
 ### A local-first operating system for an independent consulting practice
 
-*Working name "Helm" (you're at the helm of your business) — placeholder, rename freely. Alternatives: Quartermaster, Cairn, Atlas. Use this document as the repo's initial `CLAUDE.md`.*
+> **Status — shipped & live (2026-07-09).** This is the original build brief, kept for context. Helm is now a complete, deployed product: all phases below are done, plus a large post-v1 feature set, and it runs as an installable PWA at <https://helm-d5s.pages.dev/> (hosted on Cloudflare Pages). For current state see [README.md](README.md), [CHANGELOG.md](CHANGELOG.md), and [ROADMAP.md](ROADMAP.md); for the ship-as-PWA decision see [docs/adr/0001](docs/adr/0001-ship-as-pwa-defer-native-installers.md). The name **"Helm" was kept.**
 
 ---
 
@@ -24,7 +24,7 @@ The market is full of generic invoicing and bookkeeping tools, and you'd never o
 - **vite-plugin-pwa** for installable/offline
 - **react-router** for navigation
 - **react-hook-form + zod** for forms + validation
-- **@react-pdf/renderer** (or pdfmake) for generating invoices/documents as PDF
+- **@react-pdf/renderer** for generating invoices/documents as PDF
 - **recharts** for the dashboard
 - *Later/optional:* **Tauri** (Rust) to wrap as a true native desktop app with real filesystem access
 
@@ -67,28 +67,30 @@ IndexedDB can be wiped (clearing browser data, a profile reset, etc.). So:
 A phase ships when its feature is fully usable end-to-end with data persisting in Dexie, reactive UI via `useLiveQuery`, validation on all forms, and backup/restore covering the new entities. The app stays installable as a PWA throughout.
 
 ## Roadmap (post-v1)
-- **Tauri wrapper** — native desktop + automatic filesystem backups.
+*Shipped since:* Tauri desktop wrapper (built, deferred/optional — [ADR 0001](docs/adr/0001-ship-as-pwa-defer-native-installers.md)); time tracking for hourly work; encrypted backups; opt-in at-rest encryption; one-click recurring **retainer** invoices from the dashboard.
+
+*Still open:*
 - **CSV import** for expenses (bank statement) — the "sync later" path.
-- **Recurring invoices** for retainers; **overdue reminders**.
-- Optional **time tracking** for hourly work.
-- Encrypted backups.
+- **Auto-recurring invoices** — automatic monthly generation, beyond today's one-click action.
+- **Overdue reminders** — surface and nudge on invoices past due.
 
 ## Portfolio framing
 A personal tool first, but genuinely showcase-worthy: a local-first PWA with a real relational data model, document generation, and a clean dashboard. Write it up as "I built my own consulting ERP" — it pairs with AgentGate to show range (infra/agentic tooling *and* full-stack product). Keep real client data out of any screenshots.
 
-## To decide / placeholders
-- **Name** — "Helm" is a placeholder; pick one you like.
-- **PDF library** — @react-pdf/renderer (more control) vs pdfmake (simpler) vs browser print-to-PDF for v1.
-- **Tauri now or later** — recommend PWA first, Tauri as a Phase 6 upgrade.
+## Decisions (resolved)
+- **Name** — kept **Helm**.
+- **PDF library** — **@react-pdf/renderer** (`^4.0.0`), chosen for control.
+- **Tauri now or later** — **PWA first**; Tauri built but kept deferred/optional ([ADR 0001](docs/adr/0001-ship-as-pwa-defer-native-installers.md)).
+- **Host** — **Cloudflare Pages** (free static hosting), live at <https://helm-d5s.pages.dev/>.
 
 ---
 
-## Working in this repo (provisioning note)
+## Working in this repo
 
-This repo was set up with guardrails **before** project work begins:
+The estate guardrails apply here:
 
 - **`main` is protected — no direct commits.** Work on a feature branch and open a PR via the `gh` CLI.
-- **AgentGate runs on every PR** — `secrets` + `dangerous_patterns` block a merge; everything else (scope, diff size, tests, dependencies) is advisory. See **[CONTRIBUTING.md](CONTRIBUTING.md)** for the full policy and a note on the expected (non-blocking) warnings on the Phase 0 scaffold PR.
+- **AgentGate runs on every PR** — `secrets` + `dangerous_patterns` block a merge; everything else (scope, diff size, tests, dependencies) is advisory. See **[CONTRIBUTING.md](CONTRIBUTING.md)** for the full policy.
+- **CI runs on every PR** — type-check, circular-import check (madge), unit tests, build, and Playwright e2e.
+- **Every PR/issue** is assigned to Brett, labeled, filed to a milestone, and added to the Estate + Helm project boards.
 - The repo is **private**; the LLM intent check is off for now (enable later with an `ANTHROPIC_API_KEY` secret).
-
-*(Added during repo provisioning — separate from the build brief above.)*

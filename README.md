@@ -1,17 +1,35 @@
 # Helm
 
-**A local-first operating system for an independent consulting practice.**
-Clients, projects, proposals, invoices, expenses, time, taxes, and contract
-documents — in one connected place, shaped around a solo technical consultant's
-workflow.
+**A local-first PSA (professional services automation) tool for the solo
+consultant — your own "consulting ERP."** Clients, projects, proposals, invoices,
+expenses, time, taxes, and contract documents — the whole proposal → SOW →
+invoice → tax-set-aside pipeline in one connected place, shaped around a solo
+technical consultant's workflow.
 
-Everything runs on your machine. No server, no accounts, no cloud. Install it as
-a PWA or a native desktop app, work fully offline, optionally encrypt it with a
+Everything runs on your machine. No server, no accounts, no cloud. Install it
+from your browser as a PWA, work fully offline, optionally encrypt it with a
 passphrase, and back it up with one click.
 
 > Built as a daily-use tool **and** a portfolio piece: a local-first app with a
 > real relational data model, opt-in client-side encryption, PDF document
 > generation, and a command-center dashboard.
+
+---
+
+## Install
+
+Helm is live and installable — nothing to download or sign in to:
+
+1. Open **<https://helm-d5s.pages.dev/>** in a modern browser.
+2. Install it as an app: **Chrome/Edge** — click the install icon in the address
+   bar (or ⋮ menu → *Install Helm*); **Safari** — Share → *Add to Dock* (macOS) /
+   *Add to Home Screen* (iOS).
+3. It opens in its own window, works fully offline, and updates itself silently
+   on each new deploy.
+
+Your data lives only in that browser profile's storage on your machine, so
+**export a backup regularly** (Settings → Data & Backup) — see
+[Data & security](#data--security) below.
 
 ---
 
@@ -43,8 +61,9 @@ passphrase, and back it up with one click.
   and the app itself.
 
 **Local-first & private**
-- Data lives in **IndexedDB** (via Dexie). Offline-capable **PWA** and a native
-  **desktop app** (Tauri).
+- Data lives in **IndexedDB** (via Dexie). Shipped as an offline-capable,
+  installable **PWA**; an optional **Tauri** desktop build is kept in the repo
+  but deferred (see [ADR 0001](docs/adr/0001-ship-as-pwa-defer-native-installers.md)).
 - **Opt-in at-rest encryption** — encrypt the live database with a passphrase
   (tweetnacl + PBKDF2); the app locks on each load.
 - **Encrypted backups** — passphrase-protected JSON export/import (AES-256-GCM),
@@ -63,11 +82,14 @@ npm run build      # production build → dist/
 npm run preview    # preview the production build
 ```
 
-## Desktop app (Tauri)
+## Desktop app (Tauri) — optional / deferred
 
-Helm is also wrapped with [Tauri v2](https://v2.tauri.app) to run as a native
-desktop app. It needs a Rust toolchain + per-platform build tools — see
-**[docs/TAURI.md](docs/TAURI.md)** for setup, then:
+The **PWA above is the shipped product.** Helm is *also* wrapped with
+[Tauri v2](https://v2.tauri.app) as an optional native desktop build — kept in the
+repo but deferred; signed installers aren't on the release path
+([ADR 0001](docs/adr/0001-ship-as-pwa-defer-native-installers.md)). To build it
+yourself you need a Rust toolchain + per-platform build tools — see
+**[docs/TAURI.md](docs/TAURI.md)**, then:
 
 ```bash
 npm run tauri:dev      # native app with hot-reload
@@ -97,9 +119,10 @@ npm run tauri:build    # installers → src-tauri/target/release/bundle/
 | PDF | @react-pdf/renderer |
 | Charts | recharts |
 | Crypto | Web Crypto (PBKDF2, AES-GCM) + tweetnacl (secretbox) |
-| Desktop | Tauri v2 (Rust) |
+| Desktop | Tauri v2 (Rust) — optional / deferred |
 | PWA | vite-plugin-pwa |
-| Tests | Vitest + fake-indexeddb |
+| Hosting | Cloudflare Pages (static) |
+| Tests | Vitest + fake-indexeddb + React Testing Library; Playwright (e2e) |
 
 ## Project structure
 
@@ -125,8 +148,9 @@ src-tauri/              # Tauri (Rust) desktop wrapper
 ## Development
 
 ```bash
-npm run test           # watch mode
+npm run test           # watch mode (Vitest)
 npm run test:run       # single run
+npm run test:e2e       # Playwright end-to-end suite
 npm run check:cycles   # fail on circular imports (madge)
 ```
 
