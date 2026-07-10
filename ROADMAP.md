@@ -20,7 +20,7 @@ repo as a deferred, optional native shell.
 - [ ] Cut the first tagged release (`v1.0.0`) and start populating `CHANGELOG.md`
       with real dated sections.
 - [x] Deploy to **Cloudflare Pages** as a static site — **live at
-      <https://helm-d5s.pages.dev/>**. Config at [`wrangler.toml`](wrangler.toml),
+      <https://helm.brett-buskirk.dev/>**. Config at [`wrangler.toml`](wrangler.toml),
       setup in [docs/DEPLOY.md](docs/DEPLOY.md); every merge to `main`
       auto-publishes and each PR gets a free preview URL.
 - [x] Document browser install (Add to Home Screen / Install app) in the README.

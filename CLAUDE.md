@@ -1,7 +1,7 @@
 # Helm — Claude Code Build Brief
 ### A local-first operating system for an independent consulting practice
 
-> **Status — shipped & live (2026-07-09).** This is the original build brief, kept for context. Helm is now a complete, deployed product: all phases below are done, plus a large post-v1 feature set, and it runs as an installable PWA at <https://helm-d5s.pages.dev/> (hosted on Cloudflare Pages). For current state see [README.md](README.md), [CHANGELOG.md](CHANGELOG.md), and [ROADMAP.md](ROADMAP.md); for the ship-as-PWA decision see [docs/adr/0001](docs/adr/0001-ship-as-pwa-defer-native-installers.md). The name **"Helm" was kept.**
+> **Status — shipped & live (2026-07-09).** This is the original build brief, kept for context. Helm is now a complete, deployed product: all phases below are done, plus a large post-v1 feature set, and it runs as an installable PWA at <https://helm.brett-buskirk.dev/> (hosted on Cloudflare Pages). For current state see [README.md](README.md), [CHANGELOG.md](CHANGELOG.md), and [ROADMAP.md](ROADMAP.md); for the ship-as-PWA decision see [docs/adr/0001](docs/adr/0001-ship-as-pwa-defer-native-installers.md). The name **"Helm" was kept.**
 
 ---
 
@@ -81,7 +81,7 @@ A personal tool first, but genuinely showcase-worthy: a local-first PWA with a r
 - **Name** — kept **Helm**.
 - **PDF library** — **@react-pdf/renderer** (`^4.0.0`), chosen for control.
 - **Tauri now or later** — **PWA first**; Tauri built but kept deferred/optional ([ADR 0001](docs/adr/0001-ship-as-pwa-defer-native-installers.md)).
-- **Host** — **Cloudflare Pages** (free static hosting), live at <https://helm-d5s.pages.dev/>.
+- **Host** — **Cloudflare Pages** (free static hosting), live at <https://helm.brett-buskirk.dev/>.
 
 ---
 
