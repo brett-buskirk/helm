@@ -20,7 +20,7 @@ passphrase, and back it up with one click.
 
 Helm is live and installable — nothing to download or sign in to:
 
-1. Open **<https://helm-d5s.pages.dev/>** in a modern browser.
+1. Open **<https://helm.brett-buskirk.dev/>** in a modern browser.
 2. Install it as an app: **Chrome/Edge** — click the install icon in the address
    bar (or ⋮ menu → *Install Helm*); **Safari** — Share → *Add to Dock* (macOS) /
    *Add to Home Screen* (iOS).

@@ -11,7 +11,7 @@ _Nothing yet._
 ## [1.0.0] - 2026-07-09
 
 First tagged release. Helm is live as an installable, offline-capable PWA at
-<https://helm-d5s.pages.dev/> (hosted on Cloudflare Pages); the Tauri desktop
+<https://helm.brett-buskirk.dev/> (hosted on Cloudflare Pages); the Tauri desktop
 wrapper is retained as a deferred, optional native shell (see
 [ADR 0001](docs/adr/0001-ship-as-pwa-defer-native-installers.md)).
 

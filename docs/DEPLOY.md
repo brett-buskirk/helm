@@ -1,6 +1,6 @@
 # Deploying Helm (Cloudflare Pages)
 
-> **Status: live** at **<https://helm-d5s.pages.dev/>** — provisioning is done.
+> **Status: live** at **<https://helm.brett-buskirk.dev/>** — provisioning is done.
 > The steps below are the setup record and how future changes deploy.
 
 Helm ships as an installable **PWA** — a static bundle served from a CDN. Only
@@ -72,10 +72,19 @@ npx wrangler pages deploy dist --project-name helm
   `dist/` by Vite; rarely hit thanks to hash routing, but it keeps stray deep
   paths from 404ing.
 
-## Custom domain (optional)
+## Custom domain
 
-Add one under the Pages project's **Custom domains** tab. If the domain's DNS is
-already on Cloudflare, it's a one-click add and TLS is provisioned automatically.
+The app is live at **<https://helm.brett-buskirk.dev/>**. Because
+`brett-buskirk.dev`'s DNS is managed on **DigitalOcean** (not Cloudflare), it was
+wired up as a CNAME:
+
+1. Add the custom domain in the Pages project's **Custom domains** tab —
+   Cloudflare supplies a CNAME target (`helm-d5s.pages.dev`).
+2. Create a `CNAME` record in the DO DNS panel: `helm` → `helm-d5s.pages.dev`.
+3. Cloudflare provisions the TLS certificate automatically once it resolves.
+
+The Cloudflare-assigned URL `helm-d5s.pages.dev` still works as a fallback. No DNS
+migration was needed — a CNAME on DO does **not** consume a DO static-app slot.
 
 ## A note on privacy
 
