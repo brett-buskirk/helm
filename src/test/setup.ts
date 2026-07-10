@@ -9,6 +9,22 @@ if (!Element.prototype.scrollIntoView) {
   Element.prototype.scrollIntoView = () => {};
 }
 
+// jsdom doesn't implement matchMedia; stub it (defaults to no match → desktop)
+// so components using useIsMobile render under test. Individual tests can
+// override window.matchMedia to exercise the mobile branch.
+if (!window.matchMedia) {
+  window.matchMedia = ((query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false,
+  })) as typeof window.matchMedia;
+}
+
 // Mirror the app entry point: encryption hooks are installed at startup, not
 // from db/index.ts (which would cause an import cycle).
 installEncryptionHooks(db);

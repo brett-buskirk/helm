@@ -1,6 +1,8 @@
 import { createHashRouter, RouterProvider } from 'react-router';
 import { VaultGate } from './components/security/VaultGate';
 import { AppLayout } from './components/layout/AppLayout';
+import { MobileGate } from './components/layout/MobileGate';
+import { useIsMobile } from './hooks/useIsMobile';
 import ErrorPage from './pages/ErrorPage';
 import Dashboard from './pages/Dashboard';
 import Clients from './pages/Clients';
@@ -49,6 +51,14 @@ const router = createHashRouter([
 ]);
 
 export default function App() {
+  const isMobile = useIsMobile();
+
+  // Phones get a branded "built for desktop" screen instead of the app — Helm
+  // is a dense, local-first desktop workspace whose data lives on the machine
+  // you use, so there's nothing to run on a phone. Short-circuit before the
+  // VaultGate so mobile visitors never hit the unlock flow.
+  if (isMobile) return <MobileGate />;
+
   return (
     <VaultGate>
       <RouterProvider router={router} />
