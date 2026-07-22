@@ -6,9 +6,11 @@ import { renderMarkdownPdf } from '../../utils/markdownPdf';
 
 function makeStyles(accent: string) {
   return StyleSheet.create({
-    page: { fontFamily: 'Helvetica', fontSize: 10, color: '#1e293b', paddingTop: 0, paddingBottom: 48, paddingHorizontal: 48, lineHeight: 1.5 },
-    band: { height: 6, marginHorizontal: -48 },
-    header: { marginTop: 42, marginBottom: 32 },
+    page: { fontFamily: 'Helvetica', fontSize: 10, color: '#1e293b', paddingTop: 48, paddingBottom: 48, paddingHorizontal: 48, lineHeight: 1.5 },
+    // Full-bleed brand bar pinned to the top of every page (absolute insets are
+    // from the page edge). paddingTop gives continuation pages a top margin.
+    band: { position: 'absolute', top: 0, left: 0, right: 0, height: 6 },
+    header: { marginBottom: 32 },
     logo: { width: 44, height: 44, objectFit: 'contain', objectPositionX: 0, marginBottom: 14 },
     logoMark: { height: 38, width: 38, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginBottom: 14, backgroundColor: accent },
     logoMarkText: { color: '#ffffff', fontSize: 15, fontFamily: 'Helvetica-Bold' },

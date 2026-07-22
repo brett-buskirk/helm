@@ -14,7 +14,9 @@ const c = {
 
 const s = StyleSheet.create({
   page: {
-    paddingTop: 0,
+    // paddingTop gives every page (incl. continuation pages) a consistent top
+    // margin; the brand band sits above it via absolute positioning.
+    paddingTop: 48,
     paddingBottom: 64,
     paddingHorizontal: 52,
     fontFamily: 'Helvetica',
@@ -22,9 +24,11 @@ const s = StyleSheet.create({
     color: c.ink,
   },
   // ── Brand band ───────────────────────────────────────
-  band: { height: 6, marginHorizontal: -52 },
+  // Full-bleed bar pinned to the very top of every page (absolute insets are
+  // measured from the page edge, like the footer).
+  band: { position: 'absolute', top: 0, left: 0, right: 0, height: 6 },
   // ── Header ───────────────────────────────────────────
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 42, marginBottom: 28 },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 28 },
   logo: { width: 48, height: 48, objectFit: 'contain', objectPositionX: 0, marginBottom: 8 },
   logoMark: { height: 40, width: 40, borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
   logoMarkText: { color: '#ffffff', fontSize: 16, fontFamily: 'Helvetica-Bold' },
