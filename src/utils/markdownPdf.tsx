@@ -1,6 +1,24 @@
 import { Text, View, Link, StyleSheet } from '@react-pdf/renderer';
 import { marked, type Token, type Tokens } from 'marked';
 
+/**
+ * marked HTML-escapes the `.text` fields of its tokens (`"` → `&quot;`, `&` →
+ * `&amp;`, `<`/`>` → `&lt;`/`&gt;`, `'` → `&#39;`) because it's built to emit
+ * HTML. We render that text into @react-pdf `<Text>`, which is NOT HTML — so the
+ * entities would show up literally (e.g. `&quot;SOW&quot;`). Decode them back to
+ * real characters. `&amp;` is decoded last so a literal `&quot;` in the source
+ * (escaped by marked to `&amp;quot;`) round-trips correctly.
+ */
+export function decode(text: string): string {
+  return text
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, n: string) => String.fromCodePoint(parseInt(n, 16)))
+    .replace(/&#(\d+);/g, (_, n: string) => String.fromCodePoint(Number(n)))
+    .replace(/&amp;/g, '&');
+}
+
 function makeStyles(accent: string) {
   return StyleSheet.create({
     h1: { fontSize: 15, fontFamily: 'Helvetica-Bold', color: '#0f172a', marginTop: 12, marginBottom: 6 },
@@ -35,7 +53,7 @@ function inline(tokens: Token[] | undefined, s: Styles, key: string): React.Reac
       case 'em':
         return <Text key={k} style={s.italic}>{inline((t as Tokens.Em).tokens, s, k)}</Text>;
       case 'codespan':
-        return <Text key={k} style={s.mono}>{(t as Tokens.Codespan).text}</Text>;
+        return <Text key={k} style={s.mono}>{decode((t as Tokens.Codespan).text)}</Text>;
       case 'link': {
         const lt = t as Tokens.Link;
         return <Link key={k} src={lt.href} style={s.link}>{inline(lt.tokens, s, k)}</Link>;
@@ -44,7 +62,7 @@ function inline(tokens: Token[] | undefined, s: Styles, key: string): React.Reac
         return <Text key={k}>{'\n'}</Text>;
       case 'text': {
         const tt = t as Tokens.Text;
-        return tt.tokens ? <Text key={k}>{inline(tt.tokens, s, k)}</Text> : <Text key={k}>{tt.text}</Text>;
+        return tt.tokens ? <Text key={k}>{inline(tt.tokens, s, k)}</Text> : <Text key={k}>{decode(tt.text)}</Text>;
       }
       default:
         return <Text key={k}>{(t as { raw?: string }).raw ?? ''}</Text>;
@@ -90,12 +108,12 @@ export function renderMarkdownPdf(content: string, accent = '#6366f1'): React.Re
       case 'blockquote':
         out.push(
           <View key={key} style={s.quote}>
-            <Text style={s.quoteText}>{(tok as Tokens.Blockquote).text}</Text>
+            <Text style={s.quoteText}>{decode((tok as Tokens.Blockquote).text)}</Text>
           </View>,
         );
         break;
       case 'code':
-        out.push(<Text key={key} style={s.code}>{(tok as Tokens.Code).text}</Text>);
+        out.push(<Text key={key} style={s.code}>{decode((tok as Tokens.Code).text)}</Text>);
         break;
       case 'hr':
         out.push(<View key={key} style={s.hr} />);
@@ -104,13 +122,13 @@ export function renderMarkdownPdf(content: string, accent = '#6366f1'): React.Re
         const tb = tok as Tokens.Table;
         out.push(
           <Text key={`${key}-h`} style={s.tableHeader}>
-            {tb.header.map((c) => c.text).join('   |   ')}
+            {tb.header.map((c) => decode(c.text)).join('   |   ')}
           </Text>,
         );
         tb.rows.forEach((row, r) => {
           out.push(
             <Text key={`${key}-${r}`} style={s.paragraph}>
-              {row.map((c) => c.text).join('   |   ')}
+              {row.map((c) => decode(c.text)).join('   |   ')}
             </Text>,
           );
         });
