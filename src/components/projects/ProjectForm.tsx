@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -54,6 +54,19 @@ const STATUS_OPTIONS = [
   { value: 'completed', label: 'Completed' },
   { value: 'cancelled', label: 'Cancelled' },
 ];
+
+/** Section heading: a small uppercase label with a hairline rule and optional right-side action. */
+function SectionLabel({ children, action }: { children: ReactNode; action?: ReactNode }) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="shrink-0 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+        {children}
+      </span>
+      <span className="h-px flex-1 bg-slate-700/60" />
+      {action}
+    </div>
+  );
+}
 
 export function ProjectForm({ project, lockedClientId, isOpen, onClose, onSuccess }: ProjectFormProps) {
   const isEditing = !!project?.id;
@@ -179,6 +192,7 @@ export function ProjectForm({ project, lockedClientId, isOpen, onClose, onSucces
       isOpen={isOpen}
       onClose={onClose}
       title={isEditing ? 'Edit Project' : 'New Project'}
+      size="lg"
       footer={
         <>
           <Button variant="ghost" onClick={onClose} disabled={isSubmitting}>
@@ -190,122 +204,102 @@ export function ProjectForm({ project, lockedClientId, isOpen, onClose, onSucces
         </>
       }
     >
-      <form id="project-form" onSubmit={handleSubmit(onSubmit)} noValidate>
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <FormField
-              label="Project Name"
-              htmlFor="name"
-              error={errors.name?.message}
-              required
-              className="col-span-2"
-            >
-              <Input id="name" {...register('name')} error={errors.name?.message} />
-            </FormField>
-
-            <FormField
-              label="Client"
-              htmlFor="clientId"
+      <form id="project-form" onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-6">
+        {/* Basics */}
+        <section className="space-y-4">
+          <SectionLabel>Basics</SectionLabel>
+          <FormField label="Project Name" htmlFor="name" error={errors.name?.message} required>
+            <Input id="name" {...register('name')} error={errors.name?.message} />
+          </FormField>
+          <FormField label="Client" htmlFor="clientId" error={errors.clientId?.message} required>
+            <Select
+              id="clientId"
+              options={clientOptions}
+              placeholder="Select a client…"
+              disabled={!!lockedClientId}
+              {...register('clientId')}
               error={errors.clientId?.message}
-              required
-              className="col-span-2"
-            >
-              <Select
-                id="clientId"
-                options={clientOptions}
-                placeholder="Select a client…"
-                disabled={!!lockedClientId}
-                {...register('clientId')}
-                error={errors.clientId?.message}
-              />
-            </FormField>
+            />
+          </FormField>
+        </section>
 
-            <FormField
-              label="Type"
-              htmlFor="type"
-              error={errors.type?.message}
-              required
-            >
+        {/* Engagement */}
+        <section className="space-y-4">
+          <SectionLabel>Engagement</SectionLabel>
+          <div className="grid grid-cols-2 gap-4">
+            <FormField label="Type" htmlFor="type" error={errors.type?.message} required>
               <Select id="type" options={TYPE_OPTIONS} {...register('type')} error={errors.type?.message} />
             </FormField>
-
-            <FormField
-              label="Status"
-              htmlFor="status"
-              error={errors.status?.message}
-              required
-            >
+            <FormField label="Status" htmlFor="status" error={errors.status?.message} required>
               <Select id="status" options={STATUS_OPTIONS} {...register('status')} error={errors.status?.message} />
             </FormField>
-
             <FormField label="Start Date" htmlFor="startDate">
               <DateField control={control} name="startDate" id="startDate" />
             </FormField>
-
             <FormField label="End Date" htmlFor="endDate">
               <DateField control={control} name="endDate" id="endDate" />
             </FormField>
-
-            <FormField
-              label={rateLabel}
-              htmlFor="rate"
-              hint={rateHint}
-              error={errors.rate?.message}
-              className="col-span-2"
-            >
-              <Input
-                id="rate"
-                type="number"
-                min={0}
-                step={watchedType === 'hourly' ? 5 : 100}
-                placeholder={ratePlaceholder}
-                {...register('rate')}
-                error={errors.rate?.message}
-              />
-            </FormField>
-
-            <FormField label="Description" htmlFor="description" className="col-span-2">
-              <Textarea id="description" rows={3} autoGrow placeholder="Scope, goals, context…" {...register('description')} />
-            </FormField>
-
-            {/* Links — repo, PRs, dashboards */}
-            <div className="col-span-2">
-              <div className="mb-1.5 flex items-center justify-between">
-                <label className="block text-sm font-medium text-slate-300">Links</label>
-                <button
-                  type="button"
-                  onClick={() => appendLink({ label: '', url: '' })}
-                  className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
-                >
-                  <Plus size={12} />
-                  Add link
-                </button>
-              </div>
-              {linkFields.length === 0 ? (
-                <p className="text-xs text-slate-600">
-                  Attach the repo, key PRs, or a dashboard for this engagement.
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {linkFields.map((field, idx) => (
-                    <div key={field.id} className="grid grid-cols-[140px_1fr_28px] gap-2">
-                      <Input placeholder="Label (e.g. Repo)" {...register(`links.${idx}.label`)} />
-                      <Input placeholder="github.com/org/repo" {...register(`links.${idx}.url`)} />
-                      <button
-                        type="button"
-                        onClick={() => removeLink(idx)}
-                        className="flex h-[38px] items-center justify-center rounded text-slate-600 hover:text-red-400 transition-colors"
-                        aria-label="Remove link"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
           </div>
-        </div>
+          <FormField label={rateLabel} htmlFor="rate" hint={rateHint} error={errors.rate?.message}>
+            <Input
+              id="rate"
+              type="number"
+              min={0}
+              step={watchedType === 'hourly' ? 5 : 100}
+              placeholder={ratePlaceholder}
+              {...register('rate')}
+              error={errors.rate?.message}
+            />
+          </FormField>
+        </section>
+
+        {/* Details */}
+        <section className="space-y-4">
+          <SectionLabel>Details</SectionLabel>
+          <FormField label="Description" htmlFor="description">
+            <Textarea id="description" rows={3} autoGrow placeholder="Scope, goals, context…" {...register('description')} />
+          </FormField>
+        </section>
+
+        {/* Links — repo, PRs, dashboards */}
+        <section className="space-y-3">
+          <SectionLabel
+            action={
+              <button
+                type="button"
+                onClick={() => appendLink({ label: '', url: '' })}
+                className="flex shrink-0 items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
+              >
+                <Plus size={12} />
+                Add link
+              </button>
+            }
+          >
+            Links
+          </SectionLabel>
+          {linkFields.length === 0 ? (
+            <p className="text-xs text-slate-600">
+              Attach the repo, key PRs, or a dashboard for this engagement.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {linkFields.map((field, idx) => (
+                <div key={field.id} className="grid grid-cols-[140px_1fr_28px] gap-2">
+                  <Input placeholder="Label (e.g. Repo)" {...register(`links.${idx}.label`)} />
+                  <Input placeholder="github.com/org/repo" {...register(`links.${idx}.url`)} />
+                  <button
+                    type="button"
+                    onClick={() => removeLink(idx)}
+                    className="flex h-[38px] items-center justify-center rounded text-slate-600 hover:text-red-400 transition-colors"
+                    aria-label="Remove link"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
       </form>
     </Drawer>
   );
