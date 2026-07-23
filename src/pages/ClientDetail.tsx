@@ -327,6 +327,14 @@ export default function ClientDetail() {
     () => db.invoices.where('clientId').equals(clientId).reverse().sortBy('issueDate'),
     [clientId],
   ) ?? [];
+  const proposalsCount = useLiveQuery(
+    () => db.proposals.where('clientId').equals(clientId).count(),
+    [clientId],
+  ) ?? 0;
+  const documentsCount = useLiveQuery(
+    () => db.documents.where('clientId').equals(clientId).count(),
+    [clientId],
+  ) ?? 0;
 
   useEffect(() => {
     if (client) setNotes(client.notes ?? '');
@@ -467,8 +475,8 @@ export default function ClientDetail() {
     { key: 'overview', label: 'Overview' },
     { key: 'projects', label: 'Projects', count: projects.length },
     { key: 'invoices', label: 'Invoices', count: clientInvoices.length || undefined },
-    { key: 'proposals', label: 'Proposals' },
-    { key: 'documents', label: 'Documents' },
+    { key: 'proposals', label: 'Proposals', count: proposalsCount || undefined },
+    { key: 'documents', label: 'Documents', count: documentsCount || undefined },
   ];
 
   return (
@@ -568,6 +576,7 @@ export default function ClientDetail() {
             columns={projectColumns}
             data={projects}
             getKey={(p) => p.id!}
+            onRowClick={openProjectEdit}
             emptyState={
               <EmptyState
                 icon={Briefcase}
