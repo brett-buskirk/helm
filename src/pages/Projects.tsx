@@ -238,6 +238,7 @@ export default function Projects() {
         columns={columns}
         data={filtered}
         getKey={(p) => p.id!}
+        onRowClick={openEdit}
         emptyState={
           <EmptyState
             icon={Briefcase}
