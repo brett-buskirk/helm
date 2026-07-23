@@ -64,8 +64,8 @@ export async function fetchRepoActivity(
   token: string,
 ): Promise<{ prs: GitHubItem[]; issues: GitHubItem[] }> {
   const [prRes, issueRes] = await Promise.all([
-    fetch(`${API}/repos/${owner}/${repo}/pulls?state=open&per_page=10&sort=updated&direction=desc`, { headers: authHeaders(token) }),
-    fetch(`${API}/repos/${owner}/${repo}/issues?state=open&per_page=20&sort=updated&direction=desc`, { headers: authHeaders(token) }),
+    fetch(`${API}/repos/${owner}/${repo}/pulls?state=open&per_page=100&sort=updated&direction=desc`, { headers: authHeaders(token) }),
+    fetch(`${API}/repos/${owner}/${repo}/issues?state=open&per_page=100&sort=updated&direction=desc`, { headers: authHeaders(token) }),
   ]);
   if (!prRes.ok) throw new Error(describeError(prRes.status));
   if (!issueRes.ok) throw new Error(describeError(issueRes.status));
@@ -83,8 +83,9 @@ export async function fetchRepoActivity(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const prs: GitHubItem[] = (await prRes.json()).map(toItem);
   // The issues endpoint returns PRs too — filter them out by the pull_request marker.
+  // (Up to per_page=100 open issues; the "view all" links in the UI cover any beyond that.)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const issues: GitHubItem[] = (await issueRes.json()).filter((i: any) => !i.pull_request).slice(0, 10).map(toItem);
+  const issues: GitHubItem[] = (await issueRes.json()).filter((i: any) => !i.pull_request).map(toItem);
 
   return { prs, issues };
 }

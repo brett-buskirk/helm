@@ -39,6 +39,9 @@ export function GitHubActivity({ owner, repo, token }: Props) {
     };
   }, [owner, repo, token]);
 
+  const prsUrl = `https://github.com/${owner}/${repo}/pulls`;
+  const issuesUrl = `https://github.com/${owner}/${repo}/issues`;
+
   return (
     <div className="mt-2 rounded-lg border border-slate-800 bg-slate-950/60 p-3">
       <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
@@ -65,6 +68,7 @@ export function GitHubActivity({ owner, repo, token }: Props) {
               iconClass="text-emerald-400"
               heading={`${prs.length} open pull request${prs.length === 1 ? '' : 's'}`}
               items={prs}
+              viewAllUrl={prsUrl}
             />
           )}
           {issues.length > 0 && (
@@ -73,6 +77,7 @@ export function GitHubActivity({ owner, repo, token }: Props) {
               iconClass="text-amber-400"
               heading={`${issues.length} open issue${issues.length === 1 ? '' : 's'}`}
               items={issues}
+              viewAllUrl={issuesUrl}
             />
           )}
         </div>
@@ -86,17 +91,31 @@ function ItemList({
   iconClass,
   heading,
   items,
+  viewAllUrl,
 }: {
   icon: React.ElementType;
   iconClass: string;
   heading: string;
   items: GitHubItem[];
+  viewAllUrl?: string;
 }) {
   return (
     <div>
-      <p className="mb-1 flex items-center gap-1.5 text-xs font-medium text-slate-400">
-        <Icon size={12} className={iconClass} /> {heading}
-      </p>
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <p className="flex items-center gap-1.5 text-xs font-medium text-slate-400">
+          <Icon size={12} className={iconClass} /> {heading}
+        </p>
+        {viewAllUrl && (
+          <a
+            href={viewAllUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="shrink-0 text-[11px] text-indigo-400 hover:text-indigo-300 transition-colors"
+          >
+            View all ↗
+          </a>
+        )}
+      </div>
       <ul className="space-y-0.5">
         {items.map((item) => (
           <li key={item.number}>
