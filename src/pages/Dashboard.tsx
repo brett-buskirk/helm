@@ -35,6 +35,7 @@ import { getEffectiveStatus } from '../utils/invoice';
 import { createRetainerInvoice, findRetainerInvoiceForMonth, retainerPeriodLabel } from '../utils/retainer';
 import { topClientsByRevenue, unbilledValue } from '../utils/dashboard';
 import { GettingStarted } from '../components/onboarding/GettingStarted';
+import { WelcomeIntro } from '../components/onboarding/WelcomeIntro';
 import {
   startOfMonth,
   endOfMonth,
@@ -252,6 +253,9 @@ export default function Dashboard() {
           </Button>
         </div>
       </div>
+
+      {/* New-user intro — what Helm is + that it's a real, installable PWA */}
+      <WelcomeIntro />
 
       {/* First-run guide — self-hides once set up or dismissed */}
       <GettingStarted />
