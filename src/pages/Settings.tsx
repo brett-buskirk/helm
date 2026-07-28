@@ -131,7 +131,11 @@ export default function Settings() {
         defaultRate: settingsRecord.defaultRate,
         taxRate: settingsRecord.taxRate,
         invoicePrefix: settingsRecord.invoicePrefix,
-        invoiceNextNumber: settingsRecord.invoiceNextNumber,
+        // Show the padded value (e.g. "0002") so the width is preserved on re-save.
+        invoiceNextNumber: String(settingsRecord.invoiceNextNumber).padStart(
+          settingsRecord.invoiceNumberPadding ?? 0,
+          '0',
+        ) as unknown as number,
       });
       setCategories(settingsRecord.expenseCategories);
       setLogo(settingsRecord.logo);
@@ -176,12 +180,17 @@ export default function Settings() {
   async function onSubmit(data: SettingsFormData) {
     setSaving(true);
     try {
+      // Capture the zero-pad width from what the user actually typed (the raw
+      // field string), since the coerced number loses leading zeros.
+      const rawNext = String(watch('invoiceNextNumber') ?? '');
+      const invoiceNumberPadding = rawNext.replace(/\D/g, '').length || undefined;
       const payload = {
         ...data,
         ein: data.ein || undefined,
         phone: data.phone || undefined,
         website: data.website || undefined,
         brandColor: data.brandColor || DEFAULT_BRAND,
+        invoiceNumberPadding,
         logo: logo || undefined,
         expenseCategories: categories,
         updatedAt: new Date(),
@@ -461,8 +470,8 @@ export default function Settings() {
               >
                 <Input
                   id="invoiceNextNumber"
-                  type="number"
-                  min={1}
+                  type="text"
+                  inputMode="numeric"
                   {...register('invoiceNextNumber')}
                   error={errors.invoiceNextNumber?.message}
                 />

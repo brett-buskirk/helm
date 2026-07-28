@@ -215,6 +215,8 @@ export interface Settings {
   taxRate: number;
   invoicePrefix: string;
   invoiceNextNumber: number;
+  /** Zero-pad width for the number part (e.g. 4 → "0002"). Undefined = no pad. */
+  invoiceNumberPadding?: number;
   expenseCategories: string[];
   updatedAt: Date;
 }

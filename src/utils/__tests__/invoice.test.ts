@@ -1,6 +1,12 @@
 import { describe, test, expect, beforeEach } from 'vitest';
 import { db } from '../../db';
-import { getEffectiveStatus, calculateDueDate, computeBalanceDue, deleteInvoiceCascade } from '../invoice';
+import {
+  getEffectiveStatus,
+  calculateDueDate,
+  computeBalanceDue,
+  deleteInvoiceCascade,
+  generateInvoiceNumber,
+} from '../invoice';
 
 // Fixed reference dates that will never be "now"
 const PAST = new Date(2020, 0, 1);   // Jan 1 2020 — always in the past
@@ -159,5 +165,43 @@ describe('deleteInvoiceCascade', () => {
     const id = await seedInvoice('INV-2001');
     expect(await deleteInvoiceCascade(id)).toEqual({ payments: 0, released: 0 });
     expect(await db.invoices.get(id)).toBeUndefined();
+  });
+});
+
+describe('generateInvoiceNumber', () => {
+  beforeEach(async () => {
+    await db.settings.clear();
+  });
+
+  test('zero-pads the number to the configured width', async () => {
+    await db.settings.add({
+      invoicePrefix: 'INV-',
+      invoiceNextNumber: 2,
+      invoiceNumberPadding: 4,
+      expenseCategories: [],
+      updatedAt: new Date(),
+    } as any);
+    expect(await generateInvoiceNumber()).toBe('INV-0002');
+  });
+
+  test('does not pad when no width is configured', async () => {
+    await db.settings.add({
+      invoicePrefix: 'INV-',
+      invoiceNextNumber: 2,
+      expenseCategories: [],
+      updatedAt: new Date(),
+    } as any);
+    expect(await generateInvoiceNumber()).toBe('INV-2');
+  });
+
+  test('never truncates a number wider than the pad width', async () => {
+    await db.settings.add({
+      invoicePrefix: 'INV-',
+      invoiceNextNumber: 12345,
+      invoiceNumberPadding: 4,
+      expenseCategories: [],
+      updatedAt: new Date(),
+    } as any);
+    expect(await generateInvoiceNumber()).toBe('INV-12345');
   });
 });
