@@ -46,6 +46,25 @@ Kept as a future option; requires paid signing certs + hosting decisions.
 - [ ] **CSV import for expenses** — the "sync later" path for pulling in bank/
       statement rows without a live bank API.
 
+## Backlog — captured ideas
+
+Tracked as issues (milestone **Backlog**); not yet scheduled.
+
+- [ ] **Daily automated local encrypted backup** — write an encrypted backup to
+      local storage on a daily cadence, no network egress
+      ([#70](https://github.com/brett-buskirk/helm/issues/70)).
+- [ ] **Expense report documents (PDF)** — generate, save, and download expense
+      reports; on demand over a date range + filters, or auto-generated
+      monthly/quarterly/annually
+      ([#71](https://github.com/brett-buskirk/helm/issues/71)).
+- [ ] **Dedicated Security area** — move Encryption + Data & Backup out of
+      Settings into their own Security section, under Toolbox
+      ([#72](https://github.com/brett-buskirk/helm/issues/72)).
+- [ ] **Business name in the sidebar** — show the Business Name next to the
+      branding logo ([#73](https://github.com/brett-buskirk/helm/issues/73)).
+- [ ] **Branding color picker** — a custom color picker alongside the preset
+      swatches ([#74](https://github.com/brett-buskirk/helm/issues/74)).
+
 ## Maintenance
 
 - [ ] Keep dependencies current (React 19, Vite 6, Tailwind v4, Dexie v4, Tauri v2).
