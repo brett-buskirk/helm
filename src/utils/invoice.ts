@@ -70,7 +70,10 @@ export async function generateInvoiceNumber(): Promise<string> {
   const settings = await db.settings.limit(1).first();
   const prefix = settings?.invoicePrefix ?? 'INV-';
   const next = settings?.invoiceNextNumber ?? 1001;
-  return `${prefix}${next}`;
+  // Zero-pad to the width the user configured (e.g. "0002"); padStart never
+  // truncates, so larger numbers are unaffected.
+  const padding = settings?.invoiceNumberPadding ?? 0;
+  return `${prefix}${String(next).padStart(padding, '0')}`;
 }
 
 export async function incrementInvoiceNumber(): Promise<void> {
