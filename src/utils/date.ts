@@ -49,6 +49,16 @@ export function coerceDate(value: Date | string | undefined | null): Date | null
   return isNaN(d.getTime()) ? null : d;
 }
 
+/**
+ * A "projected" entry is dated in the future (after `asOf`) — it hasn't happened
+ * yet, so it's excluded from to-date totals and flagged in lists. Auto-flips to
+ * actual once the date arrives.
+ */
+export function isProjected(value: Date | string | undefined | null, asOf: Date = new Date()): boolean {
+  const d = coerceDate(value);
+  return d != null && d.getTime() > asOf.getTime();
+}
+
 export function isInPeriod(
   rawDate: Date | string | undefined | null,
   period: Period,

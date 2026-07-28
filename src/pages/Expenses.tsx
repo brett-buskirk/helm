@@ -15,7 +15,7 @@ import { Toast } from '../components/ui/Toast';
 import { ExpenseForm } from '../components/expenses/ExpenseForm';
 import { useToast } from '../hooks/useToast';
 import { formatDate, formatCurrency } from '../utils/format';
-import { isInPeriod, coerceDate, type Period } from '../utils/date';
+import { isInPeriod, coerceDate, isProjected, type Period } from '../utils/date';
 import {
   RECURRENCE_LABEL,
   dueOccurrences,
@@ -84,9 +84,20 @@ export default function Expenses() {
   }, [allExpenses, period, categoryFilter, search]);
 
   const summary = useMemo(() => {
-    const total = filtered.reduce((s, e) => s + e.amount, 0);
-    const deductible = filtered.filter((e) => e.deductible).reduce((s, e) => s + e.amount, 0);
-    return { total, deductible };
+    // Totals reflect actuals (up to today); future-dated rows are summed
+    // separately as "projected" so they don't inflate the real spend.
+    let total = 0;
+    let deductible = 0;
+    let projected = 0;
+    for (const e of filtered) {
+      if (isProjected(e.date)) {
+        projected += e.amount;
+        continue;
+      }
+      total += e.amount;
+      if (e.deductible) deductible += e.amount;
+    }
+    return { total, deductible, projected };
   }, [filtered]);
 
   // Recurring anchors with at least one occurrence due (nextDue on/before today).
@@ -289,6 +300,14 @@ export default function Expenses() {
               {formatCurrency(summary.total - summary.deductible)}
             </p>
           </div>
+          {summary.projected > 0 && (
+            <div className="border-l border-slate-700 pl-4">
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Projected</p>
+              <p className="mt-0.5 text-lg font-semibold tabular-nums text-amber-400">
+                {formatCurrency(summary.projected)}
+              </p>
+            </div>
+          )}
           <div className="border-l border-slate-700 pl-4">
             <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Count</p>
             <p className="mt-0.5 text-lg font-semibold tabular-nums text-slate-300">
@@ -353,6 +372,7 @@ export default function Expenses() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1.5">
+                      {isProjected(expense.date) && <Badge variant="warning">Projected</Badge>}
                       {expense.recurrence && (
                         <span className="inline-flex items-center gap-1 rounded-full bg-slate-700/60 px-2 py-0.5 text-[11px] font-medium text-slate-300">
                           <Repeat size={10} /> {RECURRENCE_LABEL[expense.recurrence]}
