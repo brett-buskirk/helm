@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, DEFAULT_EXPENSE_CATEGORIES } from '../../db';
-import type { Expense } from '../../types';
+import type { Expense, ExpenseRecurrence } from '../../types';
 import { Drawer } from '../ui/Drawer';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
@@ -13,6 +13,8 @@ import { Textarea } from '../ui/Textarea';
 import { FormField } from '../ui/FormField';
 import { DateField } from '../ui/DatePicker';
 import { toDateInputValue, parseDateInput } from '../../utils/format';
+import { coerceDate } from '../../utils/date';
+import { advanceByRecurrence, RECURRENCE_OPTIONS } from '../../utils/recurringExpense';
 
 const schema = z.object({
   date: z.string().min(1, 'Required'),
@@ -30,6 +32,7 @@ const schema = z.object({
     z.number().positive().optional(),
   ),
   notes: z.string().optional(),
+  recurrence: z.string().optional(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -71,6 +74,7 @@ export function ExpenseForm({ expense, isOpen, onClose, onSuccess, preselectedCl
       clientId: preselectedClientId,
       projectId: undefined,
       notes: '',
+      recurrence: '',
     },
   });
 
@@ -98,6 +102,7 @@ export function ExpenseForm({ expense, isOpen, onClose, onSuccess, preselectedCl
         clientId: expense.clientId,
         projectId: expense.projectId,
         notes: expense.notes ?? '',
+        recurrence: expense.recurrence ?? '',
       });
     } else {
       reset({
@@ -110,14 +115,29 @@ export function ExpenseForm({ expense, isOpen, onClose, onSuccess, preselectedCl
         clientId: preselectedClientId,
         projectId: undefined,
         notes: '',
+        recurrence: '',
       });
     }
   }, [isOpen, expense, preselectedClientId]);
 
   async function onSubmit(data: FormData) {
     const now = new Date();
+    const date = parseDateInput(data.date) ?? now;
+    const recurrence = (data.recurrence || undefined) as ExpenseRecurrence | undefined;
+    // Keep an existing anchor's next-due when the recurrence is unchanged (so
+    // editing an amount doesn't reset its schedule); otherwise derive the next
+    // occurrence one interval after this expense's date.
+    let nextDue: Date | undefined;
+    if (recurrence) {
+      const keep =
+        isEditing && expense?.recurrence === recurrence
+          ? coerceDate(expense.nextDue as unknown as Date)
+          : null;
+      nextDue = keep ?? advanceByRecurrence(date, recurrence);
+    }
+
     const payload = {
-      date: parseDateInput(data.date) ?? now,
+      date,
       vendor: data.vendor,
       category: data.category,
       amount: data.amount,
@@ -126,15 +146,17 @@ export function ExpenseForm({ expense, isOpen, onClose, onSuccess, preselectedCl
       clientId: data.clientId,
       projectId: data.projectId,
       notes: data.notes || undefined,
+      recurrence,
+      nextDue,
       updatedAt: now,
     };
 
     if (isEditing && expense.id) {
       await db.expenses.update(expense.id, payload);
-      onSuccess('Expense updated.');
+      onSuccess(recurrence ? 'Recurring expense saved.' : 'Expense updated.');
     } else {
       await db.expenses.add({ ...payload, createdAt: now });
-      onSuccess('Expense added.');
+      onSuccess(recurrence ? 'Recurring expense added.' : 'Expense added.');
     }
     onClose();
   }
@@ -194,9 +216,18 @@ export function ExpenseForm({ expense, isOpen, onClose, onSuccess, preselectedCl
           />
         </FormField>
 
-        <FormField label="Category" htmlFor="exp-category" error={errors.category?.message} required>
-          <Select id="exp-category" options={categoryOptions} {...register('category')} />
-        </FormField>
+        <div className="grid grid-cols-2 gap-3">
+          <FormField label="Category" htmlFor="exp-category" error={errors.category?.message} required>
+            <Select id="exp-category" options={categoryOptions} {...register('category')} />
+          </FormField>
+          <FormField
+            label="Repeats"
+            htmlFor="exp-recurrence"
+            hint="Helm prompts you to log each occurrence when it's due"
+          >
+            <Select id="exp-recurrence" options={RECURRENCE_OPTIONS} {...register('recurrence')} />
+          </FormField>
+        </div>
 
         <div className="flex items-center gap-6">
           <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-300">

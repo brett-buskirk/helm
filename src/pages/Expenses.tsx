@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Plus, Receipt, Search, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Receipt, Search, Pencil, Trash2, Repeat } from 'lucide-react';
 import { db } from '../db';
 import type { Expense } from '../types';
 import { PageHeader } from '../components/ui/PageHeader';
@@ -15,6 +15,7 @@ import { ExpenseForm } from '../components/expenses/ExpenseForm';
 import { useToast } from '../hooks/useToast';
 import { formatDate, formatCurrency } from '../utils/format';
 import { isInPeriod, type Period } from '../utils/date';
+import { RECURRENCE_LABEL, dueOccurrences, logDueOccurrences } from '../utils/recurringExpense';
 
 const PERIOD_OPTIONS = [
   { value: 'month', label: 'This Month' },
@@ -30,6 +31,8 @@ export default function Expenses() {
   const [editingExpense, setEditingExpense] = useState<Expense | undefined>();
   const [deleteTarget, setDeleteTarget] = useState<Expense | undefined>();
   const [deleting, setDeleting] = useState(false);
+  const [loggingId, setLoggingId] = useState<number | undefined>();
+  const [loggingAll, setLoggingAll] = useState(false);
 
   const [search, setSearch] = useState('');
   const [period, setPeriod] = useState<Period>('month');
@@ -70,6 +73,9 @@ export default function Expenses() {
     return { total, deductible };
   }, [filtered]);
 
+  // Recurring anchors with at least one occurrence due (nextDue on/before today).
+  const dueAnchors = useMemo(() => allExpenses.filter((e) => dueOccurrences(e) > 0), [allExpenses]);
+
   function openCreate() {
     setEditingExpense(undefined);
     setDrawerOpen(true);
@@ -94,6 +100,32 @@ export default function Expenses() {
     }
   }
 
+  async function handleLogDue(anchor: Expense) {
+    if (!anchor.id) return;
+    setLoggingId(anchor.id);
+    try {
+      const n = await logDueOccurrences(anchor);
+      showToast('success', `Logged ${n} ${anchor.vendor} expense${n === 1 ? '' : 's'}.`);
+    } catch {
+      showToast('error', 'Failed to log recurring expense.');
+    } finally {
+      setLoggingId(undefined);
+    }
+  }
+
+  async function handleLogAll() {
+    setLoggingAll(true);
+    try {
+      let total = 0;
+      for (const anchor of dueAnchors) total += await logDueOccurrences(anchor);
+      showToast('success', `Logged ${total} recurring expense${total === 1 ? '' : 's'}.`);
+    } catch {
+      showToast('error', 'Failed to log some recurring expenses.');
+    } finally {
+      setLoggingAll(false);
+    }
+  }
+
   const categoryOptions = [
     { value: '', label: 'All categories' },
     ...categories.map((c) => ({ value: c, label: c })),
@@ -111,6 +143,55 @@ export default function Expenses() {
           </Button>
         }
       />
+
+      {/* Recurring expenses due — one-click log (catches up multiple periods) */}
+      {dueAnchors.length > 0 && (
+        <section className="rounded-xl border border-amber-800/40 bg-amber-950/20 p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Repeat size={16} className="text-amber-400" />
+              <h2 className="text-sm font-semibold text-slate-100">
+                Recurring {dueAnchors.length === 1 ? 'expense' : 'expenses'} due
+              </h2>
+            </div>
+            {dueAnchors.length > 1 && (
+              <Button size="sm" variant="secondary" loading={loggingAll} onClick={handleLogAll}>
+                Log all
+              </Button>
+            )}
+          </div>
+          <ul className="mt-3 space-y-2">
+            {dueAnchors.map((e) => {
+              const n = dueOccurrences(e);
+              return (
+                <li
+                  key={e.id}
+                  className="flex items-center justify-between gap-3 rounded-lg border border-slate-700 bg-slate-900 px-3 py-2"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-slate-200">
+                      {e.vendor} · {formatCurrency(e.amount)}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      {RECURRENCE_LABEL[e.recurrence!]} · {n} occurrence{n === 1 ? '' : 's'} due since{' '}
+                      {formatDate(e.nextDue as unknown as Date)}
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    loading={loggingId === e.id}
+                    disabled={loggingAll}
+                    onClick={() => handleLogDue(e)}
+                    className="shrink-0"
+                  >
+                    Log {n}
+                  </Button>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
@@ -232,6 +313,11 @@ export default function Expenses() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1.5">
+                      {expense.recurrence && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-slate-700/60 px-2 py-0.5 text-[11px] font-medium text-slate-300">
+                          <Repeat size={10} /> {RECURRENCE_LABEL[expense.recurrence]}
+                        </span>
+                      )}
                       {expense.deductible && (
                         <Badge variant="success">Deductible</Badge>
                       )}

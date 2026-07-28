@@ -120,6 +120,8 @@ export interface Payment {
   createdAt: Date;
 }
 
+export type ExpenseRecurrence = 'monthly' | 'quarterly' | 'annual';
+
 export interface Expense {
   id?: number;
   isDemo?: boolean;
@@ -133,6 +135,10 @@ export interface Expense {
   projectId?: number;
   notes?: string;
   receiptPath?: string;
+  // Recurring expenses: an "anchor" carries a recurrence + the date its next
+  // occurrence is due; generated occurrences are plain (no recurrence/nextDue).
+  recurrence?: ExpenseRecurrence;
+  nextDue?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
