@@ -16,6 +16,7 @@ import { loadSampleData, countDemoData } from '../utils/sampleData';
 import { isEncryptionEnabled, enableEncryption, disableEncryption } from '../db/encryption';
 import { fileToLogoDataUrl } from '../utils/image';
 import { DEFAULT_BRAND } from '../utils/pdf';
+import { BrandColorPicker } from '../components/settings/BrandColorPicker';
 import { validateGitHubToken } from '../utils/github';
 import { Toast } from '../components/ui/Toast';
 import { useToast } from '../hooks/useToast';
@@ -393,27 +394,10 @@ export default function Settings() {
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-slate-300">Brand color</label>
-                <div className="flex items-center gap-3">
-                  <input
-                    type="color"
-                    {...register('brandColor')}
-                    className="h-10 w-14 cursor-pointer rounded border border-slate-700 bg-slate-800"
-                    aria-label="Brand color"
-                  />
-                  <span className="font-mono text-sm uppercase text-slate-400">{watch('brandColor')}</span>
-                </div>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#334155'].map((sw) => (
-                    <button
-                      key={sw}
-                      type="button"
-                      onClick={() => setValue('brandColor', sw, { shouldDirty: true })}
-                      className="h-6 w-6 rounded-full border border-slate-600 transition-transform hover:scale-110"
-                      style={{ backgroundColor: sw }}
-                      aria-label={`Use ${sw}`}
-                    />
-                  ))}
-                </div>
+                <BrandColorPicker
+                  value={watch('brandColor') || DEFAULT_BRAND}
+                  onChange={(hex) => setValue('brandColor', hex, { shouldDirty: true })}
+                />
               </div>
 
               <div>
