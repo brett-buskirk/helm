@@ -8,6 +8,39 @@ All notable changes to helm are documented here. The format is based on
 
 _Nothing yet._
 
+## [1.1.0] - 2026-07-28
+
+Post-1.0 improvements, live on <https://helm.brett-buskirk.dev/> — recurring
+expenses, invoice edit & delete, a new-user intro, and PDF rendering fixes.
+
+### Added
+
+- **Recurring expenses** — mark an expense Monthly, Quarterly, or Annual; Helm
+  surfaces each occurrence as it comes due and logs it in one click, catching up
+  multiple periods if you've been away.
+- **Recurring views** — a "Recurring" tab on the Expenses page (frequency filter
+  + a monthly/annual run-rate summary), and a recurring run-rate card on the
+  dashboard, alongside Retainer MRR.
+- **Invoice edit & delete** — delete an invoice (cascading to its payments and
+  freeing any billed time back to unbilled, so dashboard totals adjust), plus
+  edit and delete actions directly on the invoice list.
+- **Client detail polish** — count badges on the Proposals and Documents tabs,
+  and click any project row to open its edit drawer.
+- **Wider, sectioned project drawer** — the project add/edit panel is roomier and
+  grouped into labeled sections.
+- **GitHub integration** — shows all open issues and pull requests (previously
+  capped at 10), with "view all on GitHub" links.
+- **New-user intro** — a dashboard hero explaining what Helm is, with a one-click
+  install, shown to new users.
+- **Mobile screen** — phones get a branded "built for desktop" explainer instead
+  of a cramped layout (Helm is a local-first desktop workspace).
+
+### Fixed
+
+- **PDF rendering** — decode HTML entities (e.g. `&quot;` → `"`) so quotes render
+  correctly, and apply consistent margins on every page of documents, proposals,
+  and invoices.
+
 ## [1.0.0] - 2026-07-09
 
 First tagged release. Helm is live as an installable, offline-capable PWA at

@@ -41,13 +41,15 @@ Your data lives only in that browser profile's storage on your machine, so
 - **Proposals → SOW → Invoice pipeline** — draft → sent → accepted/declined, then
   turn an accepted proposal into an invoice in one click.
 - **Invoices** — auto-calculating line items, deposits/milestones, tax, payment
-  recording, status workflow (draft/sent/paid/overdue), and PDF export.
+  recording, status workflow (draft/sent/paid/overdue), edit & delete (delete
+  cleans up payments and frees billed time), and PDF export.
 - **Retainers** — generate the current month's invoice for an active retainer
   straight from the dashboard.
 - **Time tracking** — log hours against hourly projects and roll unbilled time
   into an invoice; cancelling an invoice releases its hours again.
-- **Expenses & taxes** — categorized expenses, deductible flags, and a running
-  25% tax set-aside.
+- **Expenses & taxes** — categorized expenses, deductible flags, a running 25%
+  tax set-aside, and recurring expenses (monthly/quarterly/annual) that Helm
+  prompts you to log when due.
 - **Documents & templates** — a vault of MSA/NDA/SOW/Proposal templates with
   variable substitution; generate client-specific docs and export branded PDFs.
 - **Toolbox** — customizable quick links to the tools you use (cloud consoles,
@@ -55,7 +57,7 @@ Your data lives only in that browser profile's storage on your machine, so
 
 **Command center**
 - A dashboard with cash-flow trends, YTD income/profit/margin, outstanding &
-  overdue, unbilled time, retainer MRR, and top clients.
+  overdue, unbilled time, retainer MRR, recurring-cost run-rate, and top clients.
 - A **⌘K command palette** — navigate anywhere and run actions from the keyboard.
 - Branding — your logo and brand color flow onto invoices, proposals, documents,
   and the app itself.
