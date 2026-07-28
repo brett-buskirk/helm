@@ -15,6 +15,48 @@ export const RECURRENCE_OPTIONS = [
   { value: 'annual', label: 'Annual' },
 ];
 
+/** Monthly-equivalent cost of one recurrence (quarterly ÷ 3, annual ÷ 12). */
+export function monthlyEquivalent(recurrence: ExpenseRecurrence, amount: number): number {
+  if (recurrence === 'monthly') return amount;
+  if (recurrence === 'quarterly') return amount / 3;
+  return amount / 12;
+}
+
+export interface RecurringSummary {
+  count: number;
+  /** Total recurring run-rate normalized to a month. */
+  monthly: number;
+  /** Annual projection (monthly × 12). */
+  annual: number;
+  /** Per-frequency breakdown, each summed to its monthly-equivalent run-rate. */
+  byFrequency: Record<ExpenseRecurrence, { count: number; monthly: number }>;
+}
+
+/**
+ * Aggregate the recurring "anchors" (expenses with a recurrence) into a
+ * monthly/annual run-rate plus a per-frequency breakdown. Generated occurrences
+ * carry no recurrence, so they're naturally excluded.
+ */
+export function summarizeRecurring(expenses: Pick<Expense, 'recurrence' | 'amount'>[]): RecurringSummary {
+  const byFrequency: RecurringSummary['byFrequency'] = {
+    monthly: { count: 0, monthly: 0 },
+    quarterly: { count: 0, monthly: 0 },
+    annual: { count: 0, monthly: 0 },
+  };
+  let monthly = 0;
+  let count = 0;
+  for (const e of expenses) {
+    if (!e.recurrence) continue;
+    const m = monthlyEquivalent(e.recurrence, e.amount);
+    monthly += m;
+    count += 1;
+    byFrequency[e.recurrence].count += 1;
+    byFrequency[e.recurrence].monthly += m;
+  }
+  const round2 = (n: number) => Math.round(n * 100) / 100;
+  return { count, monthly: round2(monthly), annual: round2(monthly * 12), byFrequency };
+}
+
 /** Advance a date by one recurrence interval (calendar-based). */
 export function advanceByRecurrence(date: Date, recurrence: ExpenseRecurrence): Date {
   const d = new Date(date);

@@ -2,26 +2,40 @@ import { useState, useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Plus, Receipt, Search, Pencil, Trash2, Repeat } from 'lucide-react';
 import { db } from '../db';
-import type { Expense } from '../types';
+import type { Expense, ExpenseRecurrence } from '../types';
 import { PageHeader } from '../components/ui/PageHeader';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
 import { Badge } from '../components/ui/Badge';
+import { Tabs } from '../components/ui/Tabs';
 import { EmptyState } from '../components/ui/EmptyState';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { Toast } from '../components/ui/Toast';
 import { ExpenseForm } from '../components/expenses/ExpenseForm';
 import { useToast } from '../hooks/useToast';
 import { formatDate, formatCurrency } from '../utils/format';
-import { isInPeriod, type Period } from '../utils/date';
-import { RECURRENCE_LABEL, dueOccurrences, logDueOccurrences } from '../utils/recurringExpense';
+import { isInPeriod, coerceDate, type Period } from '../utils/date';
+import {
+  RECURRENCE_LABEL,
+  dueOccurrences,
+  logDueOccurrences,
+  summarizeRecurring,
+  monthlyEquivalent,
+} from '../utils/recurringExpense';
 
 const PERIOD_OPTIONS = [
   { value: 'month', label: 'This Month' },
   { value: 'quarter', label: 'This Quarter' },
   { value: 'year', label: 'This Year' },
   { value: 'all', label: 'All Time' },
+];
+
+const RECURRING_FILTER_OPTIONS: { value: ExpenseRecurrence | 'all'; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'monthly', label: 'Monthly' },
+  { value: 'quarterly', label: 'Quarterly' },
+  { value: 'annual', label: 'Annual' },
 ];
 
 export default function Expenses() {
@@ -37,6 +51,8 @@ export default function Expenses() {
   const [search, setSearch] = useState('');
   const [period, setPeriod] = useState<Period>('month');
   const [categoryFilter, setCategoryFilter] = useState('');
+  const [tab, setTab] = useState<'all' | 'recurring'>('all');
+  const [recFreq, setRecFreq] = useState<ExpenseRecurrence | 'all'>('all');
 
   const allExpenses = useLiveQuery(() =>
     db.expenses.orderBy('date').reverse().toArray(),
@@ -75,6 +91,19 @@ export default function Expenses() {
 
   // Recurring anchors with at least one occurrence due (nextDue on/before today).
   const dueAnchors = useMemo(() => allExpenses.filter((e) => dueOccurrences(e) > 0), [allExpenses]);
+
+  // Recurring definitions (anchors) for the Recurring tab, filtered by frequency
+  // and sorted by next-due (soonest / already-due first).
+  const recurringAnchors = useMemo(() => allExpenses.filter((e) => e.recurrence), [allExpenses]);
+  const recurringFiltered = useMemo(() => {
+    const list = recFreq === 'all' ? recurringAnchors : recurringAnchors.filter((e) => e.recurrence === recFreq);
+    return [...list].sort(
+      (a, b) =>
+        (coerceDate(a.nextDue as unknown as Date)?.getTime() ?? 0) -
+        (coerceDate(b.nextDue as unknown as Date)?.getTime() ?? 0),
+    );
+  }, [recurringAnchors, recFreq]);
+  const recurringSummary = useMemo(() => summarizeRecurring(recurringFiltered), [recurringFiltered]);
 
   function openCreate() {
     setEditingExpense(undefined);
@@ -193,6 +222,17 @@ export default function Expenses() {
         </section>
       )}
 
+      <Tabs
+        items={[
+          { key: 'all', label: 'All', count: allExpenses.length || undefined },
+          { key: 'recurring', label: 'Recurring', count: recurringAnchors.length || undefined },
+        ]}
+        active={tab}
+        onChange={(k) => setTab(k as 'all' | 'recurring')}
+      />
+
+      {tab === 'all' && (
+      <div className="space-y-6">
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative w-56">
@@ -348,6 +388,143 @@ export default function Expenses() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+      </div>
+      )}
+
+      {tab === 'recurring' && (
+        <div className="space-y-6">
+          {/* Frequency filter */}
+          <div className="flex w-max overflow-hidden rounded-md border border-slate-700">
+            {RECURRING_FILTER_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setRecFreq(opt.value)}
+                className={[
+                  'px-3 py-1.5 text-xs font-medium transition-colors',
+                  recFreq === opt.value
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-slate-900 text-slate-400 hover:text-slate-200',
+                ].join(' ')}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Run-rate summary */}
+          {recurringFiltered.length > 0 && (
+            <div className="flex flex-wrap gap-4 rounded-xl border border-slate-700 bg-slate-800 px-5 py-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Monthly run-rate</p>
+                <p className="mt-0.5 text-lg font-semibold tabular-nums text-slate-100">
+                  {formatCurrency(recurringSummary.monthly)}
+                  <span className="text-xs font-normal text-slate-500">/mo</span>
+                </p>
+              </div>
+              <div className="border-l border-slate-700 pl-4">
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Annual</p>
+                <p className="mt-0.5 text-lg font-semibold tabular-nums text-orange-400">
+                  {formatCurrency(recurringSummary.annual)}
+                </p>
+              </div>
+              <div className="border-l border-slate-700 pl-4">
+                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Count</p>
+                <p className="mt-0.5 text-lg font-semibold tabular-nums text-slate-300">{recurringFiltered.length}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Recurring table */}
+          {recurringFiltered.length === 0 ? (
+            <EmptyState
+              icon={Repeat}
+              title={recFreq === 'all' ? 'No recurring expenses yet' : `No ${RECURRENCE_LABEL[recFreq]} recurring expenses`}
+              description="Set an expense to repeat (Monthly / Quarterly / Annual) in its form to track it here."
+              action={
+                <Button onClick={openCreate}>
+                  <Plus size={15} />
+                  Add Expense
+                </Button>
+              }
+            />
+          ) : (
+            <div className="overflow-hidden rounded-xl border border-slate-700">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-slate-700 bg-slate-800">
+                    {['Vendor', 'Category', 'Repeats', 'Amount', 'Per Year', 'Next Due', ''].map((h) => (
+                      <th
+                        key={h}
+                        className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500"
+                      >
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800 bg-slate-900">
+                  {recurringFiltered.map((e) => {
+                    const due = dueOccurrences(e) > 0;
+                    const perYear = e.recurrence ? monthlyEquivalent(e.recurrence, e.amount) * 12 : 0;
+                    return (
+                      <tr key={e.id}>
+                        <td className="px-4 py-3">
+                          <p className="text-sm font-medium text-slate-200">{e.vendor}</p>
+                          {e.notes && <p className="max-w-[200px] truncate text-xs text-slate-500">{e.notes}</p>}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-slate-400">{e.category}</td>
+                        <td className="px-4 py-3">
+                          <Badge variant="neutral">{e.recurrence ? RECURRENCE_LABEL[e.recurrence] : '—'}</Badge>
+                        </td>
+                        <td className="px-4 py-3 text-sm font-medium tabular-nums text-slate-200 whitespace-nowrap">
+                          {formatCurrency(e.amount)}
+                        </td>
+                        <td className="px-4 py-3 text-sm tabular-nums text-slate-400 whitespace-nowrap">
+                          {formatCurrency(perYear)}
+                        </td>
+                        <td className="px-4 py-3 text-sm tabular-nums whitespace-nowrap">
+                          <span className={due ? 'font-semibold text-amber-400' : 'text-slate-400'}>
+                            {formatDate(e.nextDue as unknown as Date)}
+                            {due ? ' · due' : ''}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center justify-end gap-1">
+                            {due && (
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                loading={loggingId === e.id}
+                                onClick={() => handleLogDue(e)}
+                              >
+                                Log
+                              </Button>
+                            )}
+                            <button
+                              onClick={() => openEdit(e)}
+                              className="rounded p-1.5 text-slate-400 hover:bg-slate-700 hover:text-slate-100 transition-colors"
+                              aria-label="Edit expense"
+                            >
+                              <Pencil size={13} />
+                            </button>
+                            <button
+                              onClick={() => setDeleteTarget(e)}
+                              className="rounded p-1.5 text-red-500 hover:bg-red-950 hover:text-red-300 transition-colors"
+                              aria-label="Delete expense"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 
