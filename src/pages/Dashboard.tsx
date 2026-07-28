@@ -23,6 +23,7 @@ import {
   Clock,
   Landmark,
   Users,
+  Repeat,
 } from 'lucide-react';
 import { db } from '../db';
 import type { Project } from '../types';
@@ -34,6 +35,7 @@ import { formatCurrency, formatProjectRate, formatDate } from '../utils/format';
 import { getEffectiveStatus } from '../utils/invoice';
 import { createRetainerInvoice, findRetainerInvoiceForMonth, retainerPeriodLabel } from '../utils/retainer';
 import { topClientsByRevenue, unbilledValue } from '../utils/dashboard';
+import { summarizeRecurring } from '../utils/recurringExpense';
 import { GettingStarted } from '../components/onboarding/GettingStarted';
 import { WelcomeIntro } from '../components/onboarding/WelcomeIntro';
 import {
@@ -145,6 +147,9 @@ export default function Dashboard() {
     }
     return { expensesMTD: mtd, expensesYTD: ytd };
   }, [allExpenses, yStart.getTime()]);
+
+  // Recurring-expense run-rate (monthly + annual projection) across all anchors.
+  const recurring = useMemo(() => summarizeRecurring(allExpenses), [allExpenses]);
 
   const profitYTD = incomeYTD - expensesYTD;
   const profitMargin = incomeYTD > 0 ? Math.round((profitYTD / incomeYTD) * 100) : 0;
@@ -294,8 +299,8 @@ export default function Dashboard() {
         </KpiCard>
       </div>
 
-      {/* Money to collect */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Money to collect + recurring commitments */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <button
           onClick={() => navigate('/invoices')}
           className="rounded-xl border border-slate-700 bg-slate-800 p-5 text-left transition-colors hover:border-slate-600"
@@ -339,6 +344,23 @@ export default function Dashboard() {
           <p className="mt-2 text-2xl font-bold tabular-nums text-indigo-400">{formatCurrency(totalRetainerMRR)}</p>
           <p className="mt-1 text-xs text-slate-500">{activeRetainers.length} active retainer{activeRetainers.length !== 1 ? 's' : ''}</p>
         </div>
+
+        <button
+          onClick={() => navigate('/expenses')}
+          className="rounded-xl border border-slate-700 bg-slate-800 p-5 text-left transition-colors hover:border-slate-600"
+        >
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Recurring</p>
+            <Repeat size={14} className="text-slate-600" />
+          </div>
+          <p className="mt-2 text-2xl font-bold tabular-nums text-orange-400">
+            {formatCurrency(recurring.monthly)}
+            <span className="text-sm font-medium text-slate-500">/mo</span>
+          </p>
+          <p className="mt-1 text-xs text-slate-500">
+            {formatCurrency(recurring.annual)}/yr · {recurring.count} recurring
+          </p>
+        </button>
       </div>
 
       {/* Cash flow chart */}

@@ -1,7 +1,13 @@
 import { describe, test, expect, beforeEach } from 'vitest';
 import { db } from '../../db';
 import type { Expense } from '../../types';
-import { advanceByRecurrence, dueOccurrences, logDueOccurrences } from '../recurringExpense';
+import {
+  advanceByRecurrence,
+  dueOccurrences,
+  logDueOccurrences,
+  monthlyEquivalent,
+  summarizeRecurring,
+} from '../recurringExpense';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -94,5 +100,38 @@ describe('logDueOccurrences', () => {
     const anchor = (await db.expenses.get(id)) as Expense;
     expect(await logDueOccurrences(anchor, new Date(2026, 6, 28))).toBe(0);
     expect(await db.expenses.count()).toBe(1);
+  });
+});
+
+describe('monthlyEquivalent', () => {
+  test('normalizes each frequency to a monthly figure', () => {
+    expect(monthlyEquivalent('monthly', 100)).toBe(100);
+    expect(monthlyEquivalent('quarterly', 300)).toBe(100);
+    expect(monthlyEquivalent('annual', 1200)).toBe(100);
+  });
+});
+
+describe('summarizeRecurring', () => {
+  test('aggregates run-rate + per-frequency, ignoring non-recurring expenses', () => {
+    const s = summarizeRecurring([
+      { recurrence: 'monthly', amount: 142.5 },
+      { recurrence: 'annual', amount: 1200 }, // 100/mo
+      { recurrence: 'quarterly', amount: 300 }, // 100/mo
+      { recurrence: undefined, amount: 999 }, // plain occurrence / one-time — excluded
+    ]);
+    expect(s.count).toBe(3);
+    expect(s.monthly).toBe(342.5); // 142.5 + 100 + 100
+    expect(s.annual).toBe(4110); // 342.5 * 12
+    expect(s.byFrequency.monthly).toEqual({ count: 1, monthly: 142.5 });
+    expect(s.byFrequency.annual).toEqual({ count: 1, monthly: 100 });
+    expect(s.byFrequency.quarterly).toEqual({ count: 1, monthly: 100 });
+  });
+
+  test('is empty for no recurring expenses', () => {
+    expect(summarizeRecurring([{ recurrence: undefined, amount: 50 }])).toMatchObject({
+      count: 0,
+      monthly: 0,
+      annual: 0,
+    });
   });
 });
