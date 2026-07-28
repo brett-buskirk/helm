@@ -48,7 +48,8 @@ export function Sidebar({ onSearchOpen }: SidebarProps) {
   const encrypted = useLiveQuery(() => isEncryptionEnabled(), []) ?? false;
   const settings = useLiveQuery(() => db.settings.limit(1).first());
   const logo = settings?.logo;
-  const brandName = settings?.businessName?.trim() || 'Helm';
+  const businessName = settings?.businessName?.trim();
+  const brandName = businessName || 'Helm';
 
   async function handleClearDemo() {
     setClearing(true);
@@ -68,7 +69,22 @@ export function Sidebar({ onSearchOpen }: SidebarProps) {
       {/* Brand — the user's logo/business name once set, else Helm's own */}
       <div className="flex items-center gap-3 border-b border-slate-800 px-5 py-5">
         {logo ? (
-          <img src={logo} alt={brandName} className="max-h-9 max-w-[170px] object-contain" />
+          <>
+            <img
+              src={logo}
+              alt={brandName}
+              className={
+                businessName
+                  ? 'h-8 max-w-[100px] shrink-0 object-contain'
+                  : 'max-h-9 max-w-[170px] object-contain'
+              }
+            />
+            {businessName && (
+              <span className="min-w-0 flex-1 truncate text-base font-semibold tracking-tight text-slate-100">
+                {businessName}
+              </span>
+            )}
+          </>
         ) : (
           <>
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600">
