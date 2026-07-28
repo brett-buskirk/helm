@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { ArrowLeft, Pencil, Download, Send, DollarSign, XCircle } from 'lucide-react';
+import { ArrowLeft, Pencil, Download, Send, DollarSign, XCircle, Trash2 } from 'lucide-react';
 import { usePdfDownload } from '../hooks/usePdfDownload';
 import { db } from '../db';
 import type { Client, Project, Payment } from '../types';
@@ -13,7 +13,7 @@ import { InvoicePDF } from '../components/invoices/InvoicePDF';
 import { PaymentModal } from '../components/invoices/PaymentModal';
 import { useToast } from '../hooks/useToast';
 import { formatDate, formatCurrency } from '../utils/format';
-import { getEffectiveStatus } from '../utils/invoice';
+import { getEffectiveStatus, deleteInvoiceCascade } from '../utils/invoice';
 import { releaseTimeEntriesForInvoice } from '../utils/time';
 
 const STATUS_BADGE = {
@@ -33,6 +33,8 @@ export default function InvoiceDetail() {
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const invoiceId = Number(id);
   const invoice = useLiveQuery(() => db.invoices.get(invoiceId), [invoiceId]);
@@ -99,6 +101,19 @@ export default function InvoiceDetail() {
     }
   }
 
+  async function handleDelete() {
+    if (!invoice?.id) return;
+    setDeleting(true);
+    try {
+      await deleteInvoiceCascade(invoice.id);
+      navigate('/invoices');
+    } catch {
+      showToast('error', 'Failed to delete invoice.');
+      setDeleting(false);
+      setDeleteModalOpen(false);
+    }
+  }
+
   return (
     <div className="p-6 space-y-6">
       {/* Back nav */}
@@ -160,6 +175,10 @@ export default function InvoiceDetail() {
               Cancel
             </Button>
           )}
+          <Button variant="danger" size="sm" onClick={() => setDeleteModalOpen(true)}>
+            <Trash2 size={13} />
+            Delete
+          </Button>
         </div>
       </div>
 
@@ -329,6 +348,19 @@ export default function InvoiceDetail() {
         confirmLabel="Cancel Invoice"
         variant="danger"
         loading={cancelling}
+      />
+
+      <ConfirmModal
+        isOpen={deleteModalOpen}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={handleDelete}
+        title="Delete Invoice"
+        message={`Permanently delete invoice ${invoice.invoiceNumber}? This removes it${
+          payments.length > 0 ? ` and its ${payments.length} recorded payment${payments.length === 1 ? '' : 's'}` : ''
+        }, returns any billed time to unbilled, and adjusts your income and tax totals. This cannot be undone.`}
+        confirmLabel="Delete Invoice"
+        variant="danger"
+        loading={deleting}
       />
 
       <Toast toast={toast} />
