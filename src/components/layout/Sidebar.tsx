@@ -15,6 +15,7 @@ import {
   Trash2,
   Wrench,
   Lock,
+  ShieldCheck,
 } from 'lucide-react';
 import { db } from '../../db';
 import { ConfirmModal } from '../ui/ConfirmModal';
@@ -176,22 +177,28 @@ export function Sidebar({ onSearchOpen }: SidebarProps) {
         </div>
       )}
 
-      {/* Settings at bottom */}
-      <div className="px-3 py-3 border-t border-slate-800">
-        <NavLink
-          to="/settings"
-          className={({ isActive }) =>
-            [
-              'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
-              isActive
-                ? 'bg-indigo-600 text-white'
-                : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100',
-            ].join(' ')
-          }
-        >
-          <Settings size={16} className="shrink-0" />
-          Settings
-        </NavLink>
+      {/* Config area at bottom — Security + Settings */}
+      <div className="space-y-0.5 border-t border-slate-800 px-3 py-3">
+        {[
+          { to: '/security', label: 'Security', icon: ShieldCheck },
+          { to: '/settings', label: 'Settings', icon: Settings },
+        ].map(({ to, label, icon: Icon }) => (
+          <NavLink
+            key={to}
+            to={to}
+            className={({ isActive }) =>
+              [
+                'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                isActive
+                  ? 'bg-indigo-600 text-white'
+                  : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100',
+              ].join(' ')
+            }
+          >
+            <Icon size={16} className="shrink-0" />
+            {label}
+          </NavLink>
+        ))}
       </div>
 
       <ConfirmModal

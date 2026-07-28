@@ -6,7 +6,12 @@ All notable changes to helm are documented here. The format is based on
 
 ## [Unreleased]
 
-_Nothing yet._
+### Changed
+
+- **Security area** — backup/restore and at-rest encryption moved out of Settings
+  into a dedicated **Security** page (its own sidebar entry), grouping every
+  data-safety control in one place. Settings now focuses on the business profile,
+  invoice defaults, branding, and integrations.
 
 ## [1.1.0] - 2026-07-28
 

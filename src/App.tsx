@@ -19,6 +19,7 @@ import ProposalDetail from './pages/ProposalDetail';
 import Documents from './pages/Documents';
 import DocumentEditor from './pages/DocumentEditor';
 import Toolbox from './pages/Toolbox';
+import Security from './pages/Security';
 import Settings from './pages/Settings';
 
 const router = createHashRouter([
@@ -45,6 +46,7 @@ const router = createHashRouter([
       { path: 'documents/new', element: <DocumentEditor /> },
       { path: 'documents/:id/edit', element: <DocumentEditor /> },
       { path: 'toolbox', element: <Toolbox /> },
+      { path: 'security', element: <Security /> },
       { path: 'settings', element: <Settings /> },
     ],
   },
