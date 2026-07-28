@@ -1,5 +1,6 @@
-import { describe, test, expect } from 'vitest';
-import { getEffectiveStatus, calculateDueDate, computeBalanceDue } from '../invoice';
+import { describe, test, expect, beforeEach } from 'vitest';
+import { db } from '../../db';
+import { getEffectiveStatus, calculateDueDate, computeBalanceDue, deleteInvoiceCascade } from '../invoice';
 
 // Fixed reference dates that will never be "now"
 const PAST = new Date(2020, 0, 1);   // Jan 1 2020 — always in the past
@@ -92,5 +93,71 @@ describe('calculateDueDate', () => {
 
   test('returns empty string for a malformed issue date', () => {
     expect(calculateDueDate('not-a-date', 'Net 30')).toBe('');
+  });
+});
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+async function seedInvoice(invoiceNumber: string): Promise<number> {
+  const now = new Date();
+  return (await db.invoices.add({
+    clientId: 1,
+    invoiceNumber,
+    status: 'sent',
+    issueDate: now,
+    dueDate: now,
+    lineItems: [{ description: 'Work', quantity: 1, unitPrice: 100, amount: 100 }],
+    subtotal: 100,
+    taxRate: 0,
+    taxAmount: 0,
+    total: 100,
+    amountPaid: 0,
+    balanceDue: 100,
+    createdAt: now,
+    updatedAt: now,
+  } as any)) as number;
+}
+
+describe('deleteInvoiceCascade', () => {
+  beforeEach(async () => {
+    await Promise.all([db.invoices.clear(), db.payments.clear(), db.timeEntries.clear()]);
+  });
+
+  test('removes the invoice, its payments, and frees its time entries — leaving others intact', async () => {
+    const now = new Date();
+    const target = await seedInvoice('INV-1001');
+    const other = await seedInvoice('INV-1002');
+
+    await db.payments.bulkAdd([
+      { invoiceId: target, clientId: 1, amount: 60, date: now, createdAt: now, updatedAt: now },
+      { invoiceId: target, clientId: 1, amount: 40, date: now, createdAt: now, updatedAt: now },
+      { invoiceId: other, clientId: 1, amount: 25, date: now, createdAt: now, updatedAt: now },
+    ] as any);
+    await db.timeEntries.bulkAdd([
+      { projectId: 1, clientId: 1, date: now, hours: 2, description: 'a', billable: true, invoiceId: target, createdAt: now, updatedAt: now },
+      { projectId: 1, clientId: 1, date: now, hours: 1, description: 'b', billable: true, invoiceId: other, createdAt: now, updatedAt: now },
+    ] as any);
+
+    const res = await deleteInvoiceCascade(target);
+
+    expect(res).toEqual({ payments: 2, released: 1 });
+    expect(await db.invoices.get(target)).toBeUndefined();
+    expect(await db.payments.where('invoiceId').equals(target).count()).toBe(0);
+
+    // The target's billed time entry is returned to unbilled (invoiceId cleared).
+    const freed = await db.timeEntries.filter((e) => e.description === 'a').first();
+    expect(freed?.invoiceId).toBeUndefined();
+
+    // The other invoice, its payment, and its time entry are untouched.
+    expect(await db.invoices.get(other)).toBeTruthy();
+    expect(await db.payments.where('invoiceId').equals(other).count()).toBe(1);
+    const otherEntry = await db.timeEntries.filter((e) => e.description === 'b').first();
+    expect(otherEntry?.invoiceId).toBe(other);
+  });
+
+  test('handles an invoice with no payments or time entries', async () => {
+    const id = await seedInvoice('INV-2001');
+    expect(await deleteInvoiceCascade(id)).toEqual({ payments: 0, released: 0 });
+    expect(await db.invoices.get(id)).toBeUndefined();
   });
 });

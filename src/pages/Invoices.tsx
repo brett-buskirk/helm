@@ -1,19 +1,20 @@
 import { useState, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Plus, FileText, Search } from 'lucide-react';
+import { Plus, FileText, Search, Pencil, Trash2 } from 'lucide-react';
 import { db } from '../db';
-import type { InvoiceStatus } from '../types';
+import type { Invoice, InvoiceStatus } from '../types';
 import { PageHeader } from '../components/ui/PageHeader';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Badge } from '../components/ui/Badge';
 import { Table, type TableColumn } from '../components/ui/Table';
 import { EmptyState } from '../components/ui/EmptyState';
+import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { Toast } from '../components/ui/Toast';
 import { useToast } from '../hooks/useToast';
 import { formatDate, formatCurrency } from '../utils/format';
-import { getEffectiveStatus } from '../utils/invoice';
+import { getEffectiveStatus, deleteInvoiceCascade } from '../utils/invoice';
 
 type EffectiveStatus = InvoiceStatus | 'overdue';
 
@@ -35,10 +36,26 @@ const FILTER_OPTIONS: { value: EffectiveStatus | 'all'; label: string }[] = [
 
 export default function Invoices() {
   const navigate = useNavigate();
-  const { toast } = useToast();
+  const { toast, showToast } = useToast();
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<EffectiveStatus | 'all'>('all');
+  const [deleteTarget, setDeleteTarget] = useState<Invoice | undefined>();
+  const [deleting, setDeleting] = useState(false);
+
+  async function handleDelete() {
+    if (!deleteTarget?.id) return;
+    setDeleting(true);
+    try {
+      await deleteInvoiceCascade(deleteTarget.id);
+      showToast('success', `Invoice ${deleteTarget.invoiceNumber} deleted.`);
+    } catch {
+      showToast('error', 'Failed to delete invoice.');
+    } finally {
+      setDeleting(false);
+      setDeleteTarget(undefined);
+    }
+  }
 
   const allInvoices = useLiveQuery(() => db.invoices.orderBy('issueDate').reverse().toArray()) ?? [];
   const allClients = useLiveQuery(() => db.clients.toArray()) ?? [];
@@ -136,6 +153,31 @@ export default function Invoices() {
         return <Badge variant={variant}>{label}</Badge>;
       },
     },
+    {
+      key: 'actions',
+      header: '',
+      headerClassName: 'text-right',
+      render: (inv) => (
+        <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+          {inv.effectiveStatus !== 'paid' && inv.effectiveStatus !== 'cancelled' && (
+            <button
+              onClick={() => navigate(`/invoices/${inv.id}/edit`)}
+              aria-label="Edit invoice"
+              className="rounded p-1.5 text-slate-400 hover:bg-slate-700 hover:text-slate-100 transition-colors"
+            >
+              <Pencil size={14} />
+            </button>
+          )}
+          <button
+            onClick={() => setDeleteTarget(inv)}
+            aria-label="Delete invoice"
+            className="rounded p-1.5 text-red-500 hover:bg-red-950 hover:text-red-300 transition-colors"
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
+      ),
+    },
   ];
 
   return (
@@ -204,6 +246,17 @@ export default function Invoices() {
             }
           />
         }
+      />
+
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(undefined)}
+        onConfirm={handleDelete}
+        title="Delete Invoice"
+        message={`Permanently delete invoice ${deleteTarget?.invoiceNumber}? This removes it and any recorded payments, returns billed time to unbilled, and adjusts your income and tax totals. This cannot be undone.`}
+        confirmLabel="Delete Invoice"
+        variant="danger"
+        loading={deleting}
       />
 
       <Toast toast={toast} />

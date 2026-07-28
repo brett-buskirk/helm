@@ -18,6 +18,35 @@ export function computeBalanceDue(total: number, amountPaid: number): number {
   return Math.max(0, total - amountPaid);
 }
 
+/**
+ * Permanently delete an invoice and everything tied to it, atomically:
+ * its recorded payments (so income and the 25% tax set-aside adjust on the
+ * dashboard) and any time entries billed to it (returned to unbilled so they
+ * can be re-invoiced). The dashboard, being `useLiveQuery`-driven off the
+ * payments and invoices tables, recomputes on its own once these are gone.
+ *
+ * Returns how many payments were removed and how many time entries were freed.
+ * (The time-release is inlined rather than importing `time.ts` to avoid an
+ * invoice ↔ time circular import.)
+ */
+export async function deleteInvoiceCascade(
+  invoiceId: number,
+): Promise<{ payments: number; released: number }> {
+  return db.transaction('rw', [db.invoices, db.payments, db.timeEntries], async () => {
+    const payments = await db.payments.where('invoiceId').equals(invoiceId).count();
+    await db.payments.where('invoiceId').equals(invoiceId).delete();
+    const released = await db.timeEntries
+      .where('invoiceId')
+      .equals(invoiceId)
+      .modify((entry) => {
+        entry.invoiceId = undefined;
+        entry.updatedAt = new Date();
+      });
+    await db.invoices.delete(invoiceId);
+    return { payments, released };
+  });
+}
+
 /** Returns 'overdue' if sent and past due date; otherwise the stored status. */
 export function getEffectiveStatus(invoice: Pick<Invoice, 'status' | 'dueDate'>): InvoiceStatus {
   if (invoice.status === 'sent') {
