@@ -17,6 +17,7 @@ import {
   Lock,
   LayoutDashboard,
   Wrench,
+  ShieldCheck,
   Settings as SettingsIcon,
 } from 'lucide-react';
 import { db } from '../../db';
@@ -106,6 +107,7 @@ export function CommandPalette({ isOpen, onClose }: Props) {
       { id: 'go-proposals', label: 'Proposals', group: 'Go to', icon: ClipboardList, run: () => go('/proposals') },
       { id: 'go-documents', label: 'Documents', group: 'Go to', icon: FolderOpen, run: () => go('/documents') },
       { id: 'go-toolbox', label: 'Toolbox', group: 'Go to', icon: Wrench, run: () => go('/toolbox') },
+      { id: 'go-security', label: 'Security', group: 'Go to', icon: ShieldCheck, run: () => go('/security') },
       { id: 'go-settings', label: 'Settings', group: 'Go to', icon: SettingsIcon, run: () => go('/settings') },
     ];
     return [...actions, ...nav];
