@@ -11,6 +11,7 @@ import {
   isInPeriod,
   lastNMonths,
   monthGrid,
+  isProjected,
 } from '../date';
 
 // Fixed reference date: June 15, 2026
@@ -182,5 +183,26 @@ describe('monthGrid', () => {
     expect(inMonth).toHaveLength(28);
     expect(inMonth[0].getDate()).toBe(1);
     expect(inMonth[inMonth.length - 1].getDate()).toBe(28);
+  });
+});
+
+describe('isProjected', () => {
+  const asOf = new Date(2026, 6, 28); // Jul 28 2026
+
+  test('true for a future date', () => {
+    expect(isProjected(new Date(2026, 7, 1), asOf)).toBe(true); // Aug 1
+  });
+  test('false for a past date', () => {
+    expect(isProjected(new Date(2026, 6, 1), asOf)).toBe(false); // Jul 1 — not projected
+  });
+  test('false for today', () => {
+    expect(isProjected(asOf, asOf)).toBe(false);
+  });
+  test('handles a date stored as an ISO string', () => {
+    expect(isProjected('2026-08-01', asOf)).toBe(true);
+  });
+  test('false for null / undefined', () => {
+    expect(isProjected(undefined, asOf)).toBe(false);
+    expect(isProjected(null, asOf)).toBe(false);
   });
 });

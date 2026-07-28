@@ -129,7 +129,7 @@ export default function Dashboard() {
     let mtd = 0, qtd = 0, ytd = 0;
     for (const p of allPayments) {
       const d = coerceDate(p.date as unknown as Date);
-      if (!d) continue;
+      if (!d || d > now) continue; // "to-date" excludes anything dated in the future
       if (d >= yStart) ytd += p.amount;
       if (d >= qStart && d <= qEnd) qtd += p.amount;
       if (d >= mStart && d <= mEnd) mtd += p.amount;
@@ -141,7 +141,7 @@ export default function Dashboard() {
     let mtd = 0, ytd = 0;
     for (const e of allExpenses) {
       const d = coerceDate(e.date as unknown as Date);
-      if (!d) continue;
+      if (!d || d > now) continue; // exclude future / projected expenses from to-date totals
       if (isInPeriod(d, 'month')) mtd += e.amount;
       if (d >= yStart) ytd += e.amount;
     }
