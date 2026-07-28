@@ -1,15 +1,19 @@
 # Roadmap
 
-Helm is feature-complete across its planned phases (0–5): the connected client
-hub, the proposal → SOW → invoice pipeline, invoicing with PDF export, time
-tracking, expenses and the running tax set-aside, the document/template vault
-with a markdown editor and @-mention linking, the ⌘K command palette, opt-in
-at-rest encryption, encrypted backups, and the Tauri desktop build.
+Helm shipped **v1.0.0** (2026-07-09) and is live as an installable PWA at
+<https://helm.brett-buskirk.dev/>. It's feature-complete across its planned
+phases (0–5) — the connected client hub, the proposal → SOW → invoice pipeline,
+invoicing with PDF export, time tracking, expenses and the running tax set-aside,
+the document/template vault with a markdown editor and @-mention linking, the ⌘K
+command palette, opt-in at-rest encryption, encrypted backups, and an optional
+Tauri desktop build.
 
-What's left is the path from a working daily-use tool to a tagged 1.0 release,
-plus a short list of genuine automation nice-to-haves. Nothing here is a rewrite.
+Since 1.0, post-launch releases have added recurring expenses (with a Recurring
+tab and a dashboard run-rate card), invoice edit & delete, a new-user intro, and
+PDF fixes — see [CHANGELOG.md](CHANGELOG.md). What remains is a short list of
+automation nice-to-haves. Nothing here is a rewrite.
 
-## Toward a 1.0 release
+## 1.0 release — shipped
 
 Helm ships as its **installable PWA**, not as signed native installers — see
 [ADR 0001](docs/adr/0001-ship-as-pwa-defer-native-installers.md) for why (it's a
@@ -17,8 +21,8 @@ local-first, single-user tool; paid code-signing and per-OS installer packaging
 add friction that local-first is meant to avoid). The Tauri wrapper stays in the
 repo as a deferred, optional native shell.
 
-- [ ] Cut the first tagged release (`v1.0.0`) and start populating `CHANGELOG.md`
-      with real dated sections.
+- [x] Cut the first tagged release (**v1.0.0**, 2026-07-09) with a real
+      `CHANGELOG.md`.
 - [x] Deploy to **Cloudflare Pages** as a static site — **live at
       <https://helm.brett-buskirk.dev/>**. Config at [`wrangler.toml`](wrangler.toml),
       setup in [docs/DEPLOY.md](docs/DEPLOY.md); every merge to `main`
