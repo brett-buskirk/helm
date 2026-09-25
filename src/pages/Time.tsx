@@ -13,9 +13,8 @@ import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { Toast } from '../components/ui/Toast';
 import { TimeEntryForm } from '../components/time/TimeEntryForm';
 import { TimeEntryDetail } from '../components/time/TimeEntryDetail';
-import { TimeReportPDF } from '../components/time/TimeReportPDF';
+import { TimeReportModal } from '../components/time/TimeReportModal';
 import { useToast } from '../hooks/useToast';
-import { usePdfDownload } from '../hooks/usePdfDownload';
 import { formatDate, formatCurrency } from '../utils/format';
 import { isInPeriod, type Period } from '../utils/date';
 import {
@@ -28,7 +27,6 @@ import {
 } from '../utils/time';
 import { DatePicker } from '../components/ui/DatePicker';
 import { parseDateInput } from '../utils/format';
-import { entriesForReport, reportFileName } from '../utils/timeReport';
 
 const PERIOD_OPTIONS = [
   { value: 'month', label: 'This Month' },
@@ -51,13 +49,11 @@ function formatHours(h: number): string {
 export default function Time() {
   const navigate = useNavigate();
   const { toast, showToast } = useToast();
-  const { download: downloadPdf, busy: pdfBusy } = usePdfDownload((msg) =>
-    showToast('error', msg),
-  );
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editing, setEditing] = useState<TimeEntry | undefined>();
   const [detail, setDetail] = useState<TimeEntry | undefined>();
+  const [reportOpen, setReportOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<TimeEntry | undefined>();
   const [deleting, setDeleting] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -75,7 +71,6 @@ export default function Time() {
   const allEntries = useLiveQuery(() => db.timeEntries.orderBy('date').reverse().toArray()) ?? [];
   const allClients = useLiveQuery(() => db.clients.toArray()) ?? [];
   const allProjects = useLiveQuery(() => db.projects.toArray()) ?? [];
-  const settings = useLiveQuery(() => db.settings.limit(1).first());
 
   const clientMap = useMemo(() => new Map(allClients.map((c) => [c.id!, c])), [allClients]);
   const projectMap = useMemo(() => new Map(allProjects.map((p) => [p.id!, p])), [allProjects]);
@@ -141,17 +136,6 @@ export default function Time() {
 
   const rangeInvalid = !!(billRange.from && billRange.to && billRange.from > billRange.to);
 
-  // The report covers billable work in the window whether or not it has been
-  // invoiced yet -- it documents the work done, not what is owed.
-  const reportEntries = useMemo(
-    () => (selectedProject?.id ? entriesForReport(allEntries, selectedProject.id, billRange) : []),
-    [selectedProject?.id, allEntries, billRange],
-  );
-
-  // A report needs a definite period to print in its header, so unlike invoice
-  // generation it requires both dates rather than defaulting to "everything".
-  const canDownloadReport =
-    !!selectedProject && !!billRange.from && !!billRange.to && !rangeInvalid && reportEntries.length > 0;
 
   // Value of the entry open in the detail drawer, at its project's effective
   // rate (the project's own, else the client default).
@@ -231,22 +215,6 @@ export default function Time() {
     }
   }
 
-  async function handleDownloadReport() {
-    const client = selectedProject ? clientMap.get(selectedProject.clientId) : undefined;
-    if (!selectedProject || !client || !billRange.from || !billRange.to) return;
-    await downloadPdf(
-      <TimeReportPDF
-        project={selectedProject}
-        client={client}
-        entries={reportEntries}
-        from={billRange.from}
-        to={billRange.to}
-        settings={settings}
-      />,
-      reportFileName(client, selectedProject, billRange.from, billRange.to),
-    );
-  }
-
   const clientOptions = [
     { value: '', label: 'All clients' },
     ...allClients.map((c) => ({ value: String(c.id), label: c.company })),
@@ -265,10 +233,16 @@ export default function Time() {
         title="Time"
         description={`${allEntries.length} time ${allEntries.length === 1 ? 'entry' : 'entries'} logged`}
         action={
-          <Button onClick={openCreate}>
-            <Plus size={15} />
-            Log Time
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="secondary" onClick={() => setReportOpen(true)}>
+              <FileDown size={15} />
+              Time Report
+            </Button>
+            <Button onClick={openCreate}>
+              <Plus size={15} />
+              Log Time
+            </Button>
+          </div>
         }
       />
 
@@ -387,21 +361,6 @@ export default function Time() {
                       : 'No unbilled hours'}
                   </p>
                 )}
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={handleDownloadReport}
-                  loading={pdfBusy}
-                  disabled={!canDownloadReport}
-                  title={
-                    billRange.from && billRange.to
-                      ? 'Download a client-facing report of hours worked'
-                      : 'Set both dates to download a report'
-                  }
-                >
-                  <FileDown size={13} />
-                  Time Report
-                </Button>
                 <Button
                   size="sm"
                   onClick={handleGenerateInvoice}
@@ -554,6 +513,13 @@ export default function Time() {
           </table>
         </div>
       )}
+
+      <TimeReportModal
+        isOpen={reportOpen}
+        onClose={() => setReportOpen(false)}
+        onError={(msg) => showToast('error', msg)}
+        initialProjectId={selectedProject?.id}
+      />
 
       <TimeEntryDetail
         entry={detail}
