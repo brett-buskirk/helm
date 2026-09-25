@@ -46,7 +46,9 @@ Your data lives only in that browser profile's storage on your machine, so
 - **Retainers** — generate the current month's invoice for an active retainer
   straight from the dashboard.
 - **Time tracking** — log hours against hourly projects and roll unbilled time
-  into an invoice; cancelling an invoice releases its hours again.
+  into an invoice, for everything or just a date range; cancelling an invoice
+  releases its hours again. Click any entry for its full detail, and export a
+  branded, client-facing **time report** (PDF) for a project and period.
 - **Expenses & taxes** — categorized expenses, deductible flags, a running 25%
   tax set-aside, and recurring expenses (monthly/quarterly/annual) that Helm
   prompts you to log when due. Both expense tables sort by any column and filter
