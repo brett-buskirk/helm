@@ -8,12 +8,13 @@ All notable changes to helm are documented here. The format is based on
 
 ### Added
 
-- **Client-facing time report (PDF)** — download a branded report of hours
-  worked on a project over a date range, straight from the Time page. Shows the
-  work and hours with a total, on your logo and brand color; **no rates or
-  amounts** — the report documents the work, the invoice carries the money.
-  Non-billable time is left out, and already-invoiced work is included, since
-  the report records what was done rather than what is owed.
+- **Client-facing time report (PDF)** — a **Time Report** button in the Time
+  page header opens a dialog that asks for a project and a period, previews what
+  it will cover, and downloads a branded PDF. Shows the work and hours with a
+  total, on your logo and brand color; **no rates or amounts** — the report
+  documents the work, the invoice carries the money. Non-billable time is left
+  out, and already-invoiced work is included, since the report records what was
+  done rather than what is owed.
 
 - **Bill a date range of hours** — the Time page's *Generate Invoice* now takes
   an optional inclusive **Bill from / To** window, so a project's unbilled hours

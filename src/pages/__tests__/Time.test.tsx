@@ -244,13 +244,7 @@ describe('Ranged invoice generation', () => {
   });
 });
 
-describe('Time report download', () => {
-  async function selectProject() {
-    renderPage();
-    const projectSelect = await screen.findByDisplayValue('All projects');
-    await userEvent.selectOptions(projectSelect, 'Platform Hardening');
-  }
-
+describe('Time report', () => {
   beforeEach(async () => {
     await db.timeEntries.clear();
     await db.timeEntries.add({
@@ -265,47 +259,79 @@ describe('Time report download', () => {
     } as never);
   });
 
-  it('stays disabled until both ends of the period are set', async () => {
-    await selectProject();
-    const button = await screen.findByRole('button', { name: /time report/i });
-    // A report prints its period in the header, so it needs a definite window —
-    // unlike invoicing, which defaults to "everything unbilled".
-    expect(button).toBeDisabled();
+  /** The report modal, identified by its heading. */
+  function reportModal(): HTMLElement {
+    return screen.getByRole('dialog', { name: 'Time Report' });
+  }
 
-    await userEvent.click(screen.getByLabelText('Bill from'));
-    await userEvent.click(await screen.findByRole('button', { name: 'Today' }));
-    expect(button).toBeDisabled(); // still only one end set
+  async function openReport() {
+    renderPage();
+    await userEvent.click(await screen.findByRole('button', { name: /time report/i }));
+    return reportModal();
+  }
 
-    await userEvent.click(screen.getByLabelText('To'));
-    await userEvent.click(await screen.findByRole('button', { name: 'Today' }));
-    expect(button).toBeEnabled();
+  // FormField renders required labels as "Project *", so these use prefix
+  // matchers rather than exact strings.
+  it('is reachable from the page header without touching any filter', async () => {
+    // The point of the modal: it must work from a cold page. The old inline
+    // controls lived in a summary bar that only rendered when the period
+    // filter matched an entry, so the feature vanished on the wrong month.
+    const modal = await openReport();
+    expect(within(modal).getByLabelText(/^Project/)).toBeInTheDocument();
+    expect(within(modal).getByLabelText(/^From/)).toBeInTheDocument();
+    expect(within(modal).getByLabelText(/^To/)).toBeInTheDocument();
   });
 
-  it('stays disabled when the period holds only non-billable work', async () => {
+  it('opens with a month-to-date window already filled in', async () => {
+    const modal = await openReport();
+    // Both dates are pre-set, so the only required choice is the project.
+    expect(within(modal).getByLabelText(/^From/)).not.toHaveTextContent(/select a date/i);
+    expect(within(modal).getByLabelText(/^To/)).not.toHaveTextContent(/select a date/i);
+  });
+
+  it('preselects the only project that has billable time', async () => {
+    const modal = await openReport();
+    expect(within(modal).getByLabelText(/^Project/)).toHaveValue(String(projectId));
+  });
+
+  it('previews what the report will cover', async () => {
+    const modal = await openReport();
+    expect(within(modal).getByText(/1 entry/)).toBeInTheDocument();
+    expect(within(modal).getByText(/4 hrs/)).toBeInTheDocument();
+    expect(within(modal).getByRole('button', { name: /download pdf/i })).toBeEnabled();
+  });
+
+  it('will not download when the period holds no billable work', async () => {
     // Non-billable time is internal and never appears on a client's report.
     await db.timeEntries.toCollection().modify({ billable: false });
-    await selectProject();
+    renderPage();
+    await userEvent.click(await screen.findByRole('button', { name: /time report/i }));
 
-    await userEvent.click(screen.getByLabelText('Bill from'));
-    await userEvent.click(await screen.findByRole('button', { name: 'Today' }));
-    await userEvent.click(screen.getByLabelText('To'));
-    await userEvent.click(await screen.findByRole('button', { name: 'Today' }));
-
-    expect(screen.getByRole('button', { name: /time report/i })).toBeDisabled();
+    const modal = reportModal();
+    expect(within(modal).getByText(/no billable time has been logged yet/i)).toBeInTheDocument();
+    expect(within(modal).getByRole('button', { name: /download pdf/i })).toBeDisabled();
   });
 
-  it('is offered even when the work has already been invoiced', async () => {
+  it('offers a report for work that has already been invoiced', async () => {
     // The report documents work done, not what is owed.
     await db.timeEntries.toCollection().modify({ invoiceId: 77 });
-    await selectProject();
+    const modal = await openReport();
 
-    await userEvent.click(screen.getByLabelText('Bill from'));
-    await userEvent.click(await screen.findByRole('button', { name: 'Today' }));
-    await userEvent.click(screen.getByLabelText('To'));
-    await userEvent.click(await screen.findByRole('button', { name: 'Today' }));
+    expect(within(modal).getByText(/1 entry/)).toBeInTheDocument();
+    expect(within(modal).getByRole('button', { name: /download pdf/i })).toBeEnabled();
+  });
 
-    expect(screen.getByRole('button', { name: /time report/i })).toBeEnabled();
-    // ...while there is nothing left to invoice.
-    expect(screen.getByRole('button', { name: /generate invoice/i })).toBeDisabled();
+  it('flags an inverted date range and blocks the download', async () => {
+    const modal = await openReport();
+
+    // Move the start date forward past the end date.
+    await userEvent.click(within(modal).getByLabelText(/^From/));
+    const nextMonth = await screen.findByRole('button', { name: 'Next month' });
+    await userEvent.click(nextMonth);
+    const days = screen.getAllByRole('button', { name: /^\w{3} \d{1,2}, \d{4}$/ });
+    await userEvent.click(days[days.length - 1]);
+
+    expect(within(reportModal()).getByText(/end date is before the start date/i)).toBeInTheDocument();
+    expect(within(reportModal()).getByRole('button', { name: /download pdf/i })).toBeDisabled();
   });
 });
