@@ -28,7 +28,7 @@ Helm is live and installable — nothing to download or sign in to:
    on each new deploy.
 
 Your data lives only in that browser profile's storage on your machine, so
-**export a backup regularly** (Settings → Data & Backup) — see
+**export a backup regularly** (Security → Data & Backup) — see
 [Data & security](#data--security) below.
 
 ---
@@ -42,7 +42,8 @@ Your data lives only in that browser profile's storage on your machine, so
   turn an accepted proposal into an invoice in one click.
 - **Invoices** — auto-calculating line items, deposits/milestones, tax, payment
   recording, status workflow (draft/sent/paid/overdue), edit & delete (delete
-  cleans up payments and frees billed time), and PDF export.
+  cleans up payments and frees billed time), PDF export, and a list that sorts
+  by any column.
 - **Retainers** — generate the current month's invoice for an active retainer
   straight from the dashboard.
 - **Time tracking** — log hours against hourly projects and roll unbilled time
@@ -64,8 +65,9 @@ Your data lives only in that browser profile's storage on your machine, so
   admin panels, dashboards, docs).
 
 **Command center**
-- A dashboard with cash-flow trends, YTD income/profit/margin, outstanding &
-  overdue, unbilled time, retainer MRR, recurring-cost run-rate, and top clients.
+- A dashboard with cash-flow trends, YTD revenue/profit/margin (kept separate
+  from total money in), outstanding & overdue, unbilled time, retainer MRR,
+  recurring-cost run-rate, and top clients.
 - A **⌘K command palette** — navigate anywhere and run actions from the keyboard.
 - Branding — your logo and brand color flow onto invoices, proposals, documents,
   and the app itself.
@@ -109,11 +111,14 @@ npm run tauri:build    # installers → src-tauri/target/release/bundle/
 ## Data & security
 
 - All data is stored locally in IndexedDB — clearing browser storage wipes it, so
-  **back up regularly**: Settings → Data & Backup → Export (plain or encrypted).
-- **Encryption at rest** is opt-in (Settings → Encryption). When on, the app
+  **back up regularly**: Security → Data & Backup → Export (plain or encrypted).
+- **Encryption at rest** is opt-in (Security → Encryption). When on, the app
   requires your passphrase to unlock; sensitive content and identities are stored
   as ciphertext while the structural graph stays queryable. There is **no
   passphrase recovery** — keep a backup.
+- **Data health** — Helm checks its own date types on load and repairs a
+  database restored from an older backup, so date-sorted lists stay correct.
+  Security → Data Health also exposes the repair manually.
 - No telemetry, no network calls for your data.
 
 ## Tech stack
