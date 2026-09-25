@@ -13,10 +13,26 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { Toast } from '../components/ui/Toast';
 import { useToast } from '../hooks/useToast';
+import { useTableSort } from '../hooks/useTableSort';
 import { formatDate, formatCurrency } from '../utils/format';
 import { getEffectiveStatus, deleteInvoiceCascade } from '../utils/invoice';
+import { coerceDate } from '../utils/date';
 
 type EffectiveStatus = InvoiceStatus | 'overdue';
+
+/**
+ * The invoice list's column keys. Every column bar `actions` is sortable —
+ * sortability comes from a column declaring a `sortValue`, not from this type.
+ */
+type InvoiceColumnKey =
+  | 'number'
+  | 'client'
+  | 'issued'
+  | 'due'
+  | 'total'
+  | 'balance'
+  | 'status'
+  | 'actions';
 
 const STATUS_BADGE: Record<EffectiveStatus, { variant: 'neutral' | 'info' | 'danger' | 'success'; label: string }> = {
   draft: { variant: 'neutral', label: 'Draft' },
@@ -24,6 +40,18 @@ const STATUS_BADGE: Record<EffectiveStatus, { variant: 'neutral' | 'info' | 'dan
   overdue: { variant: 'danger', label: 'Overdue' },
   paid: { variant: 'success', label: 'Paid' },
   cancelled: { variant: 'neutral', label: 'Cancelled' },
+};
+
+/**
+ * Sort order for the Status column: the invoice's position in the workflow,
+ * not its label alphabetically — "Draft, Overdue, Paid, Sent" tells you nothing.
+ */
+const STATUS_RANK: Record<EffectiveStatus, number> = {
+  draft: 0,
+  sent: 1,
+  overdue: 2,
+  paid: 3,
+  cancelled: 4,
 };
 
 const FILTER_OPTIONS: { value: EffectiveStatus | 'all'; label: string }[] = [
@@ -40,6 +68,8 @@ export default function Invoices() {
 
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<EffectiveStatus | 'all'>('all');
+  // Newest first — the natural reading order for a ledger.
+  const { sort, toggleSort } = useTableSort<InvoiceColumnKey>('issued', 'desc');
   const [deleteTarget, setDeleteTarget] = useState<Invoice | undefined>();
   const [deleting, setDeleting] = useState(false);
 
@@ -57,6 +87,8 @@ export default function Invoices() {
     }
   }
 
+  // Display order is decided by the sort below, not by this query — the table
+  // sorts in memory so the user can reorder by any column.
   const allInvoices = useLiveQuery(() => db.invoices.orderBy('issueDate').reverse().toArray()) ?? [];
   const allClients = useLiveQuery(() => db.clients.toArray()) ?? [];
 
@@ -84,10 +116,11 @@ export default function Invoices() {
     });
   }, [enriched, search, statusFilter]);
 
-  const columns: TableColumn<(typeof filtered)[0]>[] = [
+  const columns: TableColumn<(typeof filtered)[0], InvoiceColumnKey>[] = [
     {
       key: 'number',
       header: 'Invoice #',
+      sortValue: (inv) => inv.invoiceNumber,
       render: (inv) => (
         <span className="font-mono font-medium text-slate-100">{inv.invoiceNumber}</span>
       ),
@@ -95,6 +128,7 @@ export default function Invoices() {
     {
       key: 'client',
       header: 'Client',
+      sortValue: (inv) => inv.clientName,
       render: (inv) => (
         <Link
           to={`/clients/${inv.clientId}`}
@@ -108,6 +142,11 @@ export default function Invoices() {
     {
       key: 'issued',
       header: 'Issued',
+      // coerceDate, not the raw field: a database restored before the date-type
+      // fix holds some of these as ISO strings, and comparing those against real
+      // Dates is what scrambled this list in the first place.
+      sortValue: (inv) => coerceDate(inv.issueDate as unknown as Date),
+      defaultSortDirection: 'desc',
       render: (inv) => (
         <span className="tabular-nums text-slate-400">
           {formatDate(inv.issueDate as unknown as Date)}
@@ -117,6 +156,8 @@ export default function Invoices() {
     {
       key: 'due',
       header: 'Due',
+      sortValue: (inv) => coerceDate(inv.dueDate as unknown as Date),
+      defaultSortDirection: 'desc',
       render: (inv) => (
         <span
           className={[
@@ -131,6 +172,8 @@ export default function Invoices() {
     {
       key: 'total',
       header: 'Total',
+      sortValue: (inv) => inv.total,
+      defaultSortDirection: 'desc',
       render: (inv) => (
         <span className="tabular-nums font-medium text-slate-200">{formatCurrency(inv.total)}</span>
       ),
@@ -138,6 +181,8 @@ export default function Invoices() {
     {
       key: 'balance',
       header: 'Balance',
+      sortValue: (inv) => inv.balanceDue,
+      defaultSortDirection: 'desc',
       render: (inv) =>
         inv.balanceDue > 0 ? (
           <span className="tabular-nums text-slate-400">{formatCurrency(inv.balanceDue)}</span>
@@ -148,6 +193,7 @@ export default function Invoices() {
     {
       key: 'status',
       header: 'Status',
+      sortValue: (inv) => STATUS_RANK[inv.effectiveStatus],
       render: (inv) => {
         const { variant, label } = STATUS_BADGE[inv.effectiveStatus];
         return <Badge variant={variant}>{label}</Badge>;
@@ -226,6 +272,8 @@ export default function Invoices() {
         columns={columns}
         data={filtered}
         getKey={(inv) => inv.id!}
+        sort={sort}
+        onSort={toggleSort}
         onRowClick={(inv) => navigate(`/invoices/${inv.id}`)}
         emptyState={
           <EmptyState

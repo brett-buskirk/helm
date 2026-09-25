@@ -31,6 +31,31 @@ function compareValues(a: SortValue, b: SortValue): number {
 }
 
 /**
+ * Sort `rows` by `sort`, reading each row's value through `accessor`.
+ *
+ * Pure and exported separately from the hook so a component holding column
+ * definitions (see `ui/Table`) can sort with them without also owning the state.
+ */
+export function applySort<T, K extends string>(
+  rows: T[],
+  sort: SortState<K>,
+  accessor: (row: T, key: K) => SortValue,
+): T[] {
+  const dir = sort.direction === 'asc' ? 1 : -1;
+  // Array#sort is stable, so equal rows keep the order they arrived in.
+  return rows.slice().sort((x, y) => {
+    const a = accessor(x, sort.key);
+    const b = accessor(y, sort.key);
+    const aEmpty = isEmpty(a);
+    const bEmpty = isEmpty(b);
+    // Blanks sort last in both directions — flipping the sort shouldn't bring a
+    // screenful of "—" to the top.
+    if (aEmpty || bEmpty) return aEmpty && bEmpty ? 0 : aEmpty ? 1 : -1;
+    return dir * compareValues(a, b);
+  });
+}
+
+/**
  * Client-side table sorting.
  *
  * Sorting happens in memory rather than through a Dexie index on purpose: with
@@ -60,20 +85,8 @@ export function useTableSort<K extends string>(initialKey: K, initialDirection: 
   }, []);
 
   const sortRows = useCallback(
-    <T,>(rows: T[], accessor: (row: T, key: K) => SortValue): T[] => {
-      const dir = sort.direction === 'asc' ? 1 : -1;
-      // Array#sort is stable, so equal rows keep the order they arrived in.
-      return rows.slice().sort((x, y) => {
-        const a = accessor(x, sort.key);
-        const b = accessor(y, sort.key);
-        const aEmpty = isEmpty(a);
-        const bEmpty = isEmpty(b);
-        // Blanks sort last in both directions — flipping the sort shouldn't
-        // bring a screenful of "—" to the top.
-        if (aEmpty || bEmpty) return aEmpty && bEmpty ? 0 : aEmpty ? 1 : -1;
-        return dir * compareValues(a, b);
-      });
-    },
+    <T,>(rows: T[], accessor: (row: T, key: K) => SortValue): T[] =>
+      applySort(rows, sort, accessor),
     [sort],
   );
 
