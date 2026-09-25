@@ -6,6 +6,16 @@ All notable changes to helm are documented here. The format is based on
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-09-25
+
+Shaped by a walkthrough of the app in real use, on
+<https://helm.brett-buskirk.dev/>. Income that never went through an invoice now
+has a home — and, importantly, is kept out of the numbers it would distort.
+Expenses and invoices sort and filter by any column. Time gains an entry detail
+panel, date-ranged invoicing, and a client-facing report. Underneath all of it,
+a data-integrity bug that had been quietly scrambling every date-sorted list is
+fixed and repairs itself.
+
 ### Added
 
 - **Sortable invoice list** — click any column header on Invoices to sort by
@@ -13,7 +23,6 @@ All notable changes to helm are documented here. The format is based on
   (status sorts by workflow position — draft → sent → overdue → paid — rather
   than alphabetically). Sorting now lives in the shared table component, so
   other list pages can adopt it.
-
 - **Client-facing time report (PDF)** — a **Time Report** button in the Time
   page header opens a dialog that asks for a project and a period, previews what
   it will cover, and downloads a branded PDF. Shows the work and hours with a
@@ -21,19 +30,16 @@ All notable changes to helm are documented here. The format is based on
   documents the work, the invoice carries the money. Non-billable time is left
   out, and already-invoiced work is included, since the report records what was
   done rather than what is owed.
-
 - **Bill a date range of hours** — the Time page's *Generate Invoice* now takes
   an optional inclusive **Bill from / To** window, so a project's unbilled hours
   can be invoiced a month (or any period) at a time instead of all at once.
   Hours outside the window stay unbilled for a later invoice, and the invoice
   records the period it covers so the client can see what it's for. Leaving both
   dates blank bills everything, as before.
-
 - **Time entry detail** — click a row on the Time page (or tab to its
   description) to open a panel with the full description, client, project,
   hours, status, and the entry's value at the project's rate, with Edit and
   Delete alongside. Billed entries stay locked and link to their invoice.
-
 - **Income beyond invoices** — a new **Income** page records money that never
   went through an invoice: owner's contributions, cashback and rebates,
   donations, interest, and anything else. Invoice payments appear in the same
@@ -45,7 +51,6 @@ All notable changes to helm are documented here. The format is based on
   and the 25% tax set-aside. Each source carries a sensible taxable default that
   you can override per entry, and the value is stored on the record so how a
   deposit was treated stays auditable.
-
 - **Sortable, filterable expense tables** — click any column header on Expenses
   to sort by it (date, vendor, category, client, amount; and on the Recurring
   tab, repeats, per-year, and next-due), and narrow the list with new **client**

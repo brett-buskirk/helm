@@ -8,10 +8,13 @@ the document/template vault with a markdown editor and @-mention linking, the �
 command palette, opt-in at-rest encryption, encrypted backups, and an optional
 Tauri desktop build.
 
-Since 1.0, post-launch releases have added recurring expenses (with a Recurring
-tab and a dashboard run-rate card), invoice edit & delete, a new-user intro, and
-PDF fixes — see [CHANGELOG.md](CHANGELOG.md). What remains is a short list of
-automation nice-to-haves. Nothing here is a rewrite.
+Since 1.0, post-launch releases have added recurring expenses, invoice edit &
+delete, a new-user intro and PDF fixes (**1.1.0**); then an income ledger for
+money that never went through an invoice, sortable/filterable expense and
+invoice lists, a Time entry detail panel, date-ranged invoicing, a client-facing
+time report, and a self-repairing fix for date-type corruption (**1.2.0**) — see
+[CHANGELOG.md](CHANGELOG.md). What remains is a short list of automation
+nice-to-haves. Nothing here is a rewrite.
 
 ## 1.0 release — shipped
 
@@ -56,14 +59,16 @@ Tracked as issues (milestone **Backlog**); not yet scheduled.
 - [ ] **Expense report documents (PDF)** — generate, save, and download expense
       reports; on demand over a date range + filters, or auto-generated
       monthly/quarterly/annually
-      ([#71](https://github.com/brett-buskirk/helm/issues/71)).
-- [ ] **Dedicated Security area** — move Encryption + Data & Backup out of
-      Settings into their own Security section, under Toolbox
-      ([#72](https://github.com/brett-buskirk/helm/issues/72)).
-- [ ] **Business name in the sidebar** — show the Business Name next to the
-      branding logo ([#73](https://github.com/brett-buskirk/helm/issues/73)).
-- [ ] **Branding color picker** — a custom color picker alongside the preset
-      swatches ([#74](https://github.com/brett-buskirk/helm/issues/74)).
+      ([#71](https://github.com/brett-buskirk/helm/issues/71)). The Time report
+      added in 1.2.0 is the pattern to follow.
+- [x] **Dedicated Security area** — shipped in 1.2.0 (#79).
+- [x] **Business name in the sidebar** — shipped in 1.2.0 (#77).
+- [x] **Branding color picker** — shipped in 1.2.0 (#78).
+
+## Small follow-ups
+
+- [ ] Adopt the shared table's column sorting on **Clients**, **Projects**, and
+      the client detail tabs — they already use the same `Table` component.
 
 ## Maintenance
 
