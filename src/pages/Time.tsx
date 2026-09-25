@@ -21,7 +21,11 @@ import {
   summarizeHours,
   effectiveHourlyRate,
   createInvoiceFromUnbilledHours,
+  unbilledInRange,
+  formatRangeLabel,
 } from '../utils/time';
+import { DatePicker } from '../components/ui/DatePicker';
+import { parseDateInput } from '../utils/format';
 
 const PERIOD_OPTIONS = [
   { value: 'month', label: 'This Month' },
@@ -51,6 +55,11 @@ export default function Time() {
   const [deleteTarget, setDeleteTarget] = useState<TimeEntry | undefined>();
   const [deleting, setDeleting] = useState(false);
   const [generating, setGenerating] = useState(false);
+
+  // Optional inclusive window for the generated invoice. Empty on both ends
+  // means "every unbilled hour", which is what this did before ranges existed.
+  const [billFrom, setBillFrom] = useState('');
+  const [billTo, setBillTo] = useState('');
 
   const [period, setPeriod] = useState<Period>('month');
   const [clientFilter, setClientFilter] = useState('');
@@ -106,11 +115,24 @@ export default function Time() {
     [selectedProject?.id, selectedProject?.rate],
   ) ?? 0;
 
+  const billRange = useMemo(
+    () => ({ from: parseDateInput(billFrom) ?? null, to: parseDateInput(billTo) ?? null }),
+    [billFrom, billTo],
+  );
+
+  // What "Generate Invoice" will actually bill: this project's unbilled hours,
+  // narrowed to the range. Computed with the same helper the write path uses,
+  // so the preview can't drift from the result.
   const projectUnbilled = useMemo(() => {
     if (!selectedProject) return null;
-    const entries = allEntries.filter((e) => e.projectId === selectedProject.id && isUnbilled(e));
+    const entries = unbilledInRange(
+      allEntries.filter((e) => e.projectId === selectedProject.id),
+      billRange,
+    );
     return summarizeHours(entries, projectRate);
-  }, [selectedProject, allEntries, projectRate]);
+  }, [selectedProject, allEntries, projectRate, billRange]);
+
+  const rangeInvalid = !!(billRange.from && billRange.to && billRange.from > billRange.to);
 
   // Value of the entry open in the detail drawer, at its project's effective
   // rate (the project's own, else the client default).
@@ -162,12 +184,26 @@ export default function Time() {
     if (!selectedProject) return;
     setGenerating(true);
     try {
-      const invoiceId = await createInvoiceFromUnbilledHours(selectedProject);
+      const invoiceId = await createInvoiceFromUnbilledHours(
+        selectedProject,
+        new Date(),
+        billRange,
+      );
       if (invoiceId == null) {
-        showToast('error', 'No unbilled hours for this project.');
+        showToast(
+          'error',
+          billRange.from || billRange.to
+            ? 'No unbilled hours for this project in that date range.'
+            : 'No unbilled hours for this project.',
+        );
         return;
       }
-      showToast('success', 'Draft invoice created from unbilled hours.');
+      showToast(
+        'success',
+        billRange.from && billRange.to
+          ? `Draft invoice created for ${formatRangeLabel(billRange.from, billRange.to)}.`
+          : 'Draft invoice created from unbilled hours.',
+      );
       navigate(`/invoices/${invoiceId}`);
     } catch {
       showToast('error', 'Could not generate the invoice.');
@@ -186,7 +222,7 @@ export default function Time() {
   ];
 
   const canGenerate =
-    !!selectedProject && !!projectUnbilled && projectUnbilled.count > 0;
+    !!selectedProject && !!projectUnbilled && projectUnbilled.count > 0 && !rangeInvalid;
 
   return (
     <div className="p-6 space-y-6">
@@ -265,19 +301,67 @@ export default function Time() {
           </div>
 
           {selectedProject && (
-            <div className="ml-auto flex items-center gap-3">
-              {projectUnbilled && projectUnbilled.count > 0 ? (
-                <p className="text-xs text-slate-500">
-                  {formatHours(projectUnbilled.hours)} unbilled ·{' '}
-                  <span className="text-slate-300">{formatCurrency(projectUnbilled.amount)}</span>
-                </p>
-              ) : (
-                <p className="text-xs text-slate-600">No unbilled hours</p>
-              )}
-              <Button size="sm" onClick={handleGenerateInvoice} loading={generating} disabled={!canGenerate}>
-                <FilePlus size={13} />
-                Generate Invoice
-              </Button>
+            <div className="ml-auto flex flex-wrap items-end gap-3">
+              {/* Optional inclusive window — leave both blank to bill everything */}
+              <div>
+                <label
+                  htmlFor="bill-from"
+                  className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500"
+                >
+                  Bill from
+                </label>
+                <DatePicker
+                  id="bill-from"
+                  value={billFrom}
+                  onChange={setBillFrom}
+                  placeholder="Earliest"
+                  hasError={rangeInvalid}
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="bill-to"
+                  className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500"
+                >
+                  To
+                </label>
+                <DatePicker
+                  id="bill-to"
+                  value={billTo}
+                  onChange={setBillTo}
+                  placeholder="Latest"
+                  hasError={rangeInvalid}
+                />
+              </div>
+
+              <div className="flex items-center gap-3 pb-1.5">
+                {rangeInvalid ? (
+                  <p className="text-xs text-red-400">End date is before the start date.</p>
+                ) : projectUnbilled && projectUnbilled.count > 0 ? (
+                  <p className="text-xs text-slate-500">
+                    {formatHours(projectUnbilled.hours)} unbilled ·{' '}
+                    <span className="text-slate-300">{formatCurrency(projectUnbilled.amount)}</span>
+                    {(billRange.from || billRange.to) && (
+                      <span className="text-slate-600"> in range</span>
+                    )}
+                  </p>
+                ) : (
+                  <p className="text-xs text-slate-600">
+                    {billRange.from || billRange.to
+                      ? 'No unbilled hours in range'
+                      : 'No unbilled hours'}
+                  </p>
+                )}
+                <Button
+                  size="sm"
+                  onClick={handleGenerateInvoice}
+                  loading={generating}
+                  disabled={!canGenerate}
+                >
+                  <FilePlus size={13} />
+                  Generate Invoice
+                </Button>
+              </div>
             </div>
           )}
         </div>

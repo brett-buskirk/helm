@@ -1,5 +1,18 @@
 export type Period = 'month' | 'quarter' | 'year' | 'all';
 
+export function startOfDay(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+/**
+ * The last representable instant of `date`'s day. Used to make a date range
+ * inclusive of its end date regardless of any time component on the records
+ * being compared.
+ */
+export function endOfDay(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
+}
+
 export function startOfMonth(date = new Date()): Date {
   return new Date(date.getFullYear(), date.getMonth(), 1);
 }

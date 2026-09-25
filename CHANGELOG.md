@@ -8,6 +8,13 @@ All notable changes to helm are documented here. The format is based on
 
 ### Added
 
+- **Bill a date range of hours** — the Time page's *Generate Invoice* now takes
+  an optional inclusive **Bill from / To** window, so a project's unbilled hours
+  can be invoiced a month (or any period) at a time instead of all at once.
+  Hours outside the window stay unbilled for a later invoice, and the invoice
+  records the period it covers so the client can see what it's for. Leaving both
+  dates blank bills everything, as before.
+
 - **Time entry detail** — click a row on the Time page (or tab to its
   description) to open a panel with the full description, client, project,
   hours, status, and the entry's value at the project's rate, with Edit and

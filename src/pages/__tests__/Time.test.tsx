@@ -168,3 +168,78 @@ describe('Time entry detail drawer', () => {
     );
   });
 });
+
+describe('Ranged invoice generation', () => {
+  /** Select the seeded project so the billing controls appear. */
+  async function selectProject() {
+    renderPage();
+    const projectSelect = await screen.findByDisplayValue('All projects');
+    await userEvent.selectOptions(projectSelect, 'Platform Hardening');
+  }
+
+  beforeEach(async () => {
+    // One entry today, one a week back, both unbilled and billable.
+    await db.timeEntries.clear();
+    const base = {
+      clientId,
+      projectId,
+      description: 'Ranged work',
+      billable: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    await db.timeEntries.bulkAdd([
+      { ...base, date: new Date(), hours: 2 },
+      { ...base, date: weekAgo, hours: 5, description: 'Older work' },
+    ] as never[]);
+  });
+
+  it('shows the billing window controls once a project is chosen', async () => {
+    await selectProject();
+    expect(await screen.findByText('Bill from')).toBeInTheDocument();
+    expect(screen.getByText('To')).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /generate invoice/i })).toBeEnabled();
+  });
+
+  it('counts every unbilled hour when no window is set', async () => {
+    await selectProject();
+    // 7 hrs at the project's $200 rate.
+    expect(await screen.findByText(/7 hrs unbilled/)).toBeInTheDocument();
+    expect(screen.getByText('$1,400.00')).toBeInTheDocument();
+  });
+
+  it('narrows the preview once a start date is picked', async () => {
+    await selectProject();
+
+    // "Today" as the start excludes the entry from a week ago.
+    const fromTrigger = screen.getByLabelText('Bill from');
+    await userEvent.click(fromTrigger);
+    await userEvent.click(await screen.findByRole('button', { name: 'Today' }));
+
+    expect(await screen.findByText(/2 hrs unbilled/)).toBeInTheDocument();
+    expect(screen.getByText('$400.00')).toBeInTheDocument();
+    expect(screen.getByText('in range')).toBeInTheDocument();
+  });
+
+  it('only bills the hours inside the window', async () => {
+    await selectProject();
+
+    const fromTrigger = screen.getByLabelText('Bill from');
+    await userEvent.click(fromTrigger);
+    await userEvent.click(await screen.findByRole('button', { name: 'Today' }));
+    await userEvent.click(screen.getByRole('button', { name: /generate invoice/i }));
+
+    await vi.waitFor(async () => {
+      expect(await db.invoices.count()).toBe(1);
+    });
+    const [invoice] = await db.invoices.toArray();
+    expect(invoice.lineItems).toHaveLength(1);
+    expect(invoice.subtotal).toBe(400);
+
+    // The older entry is still unbilled and can be invoiced separately.
+    const unbilled = (await db.timeEntries.toArray()).filter((e) => e.invoiceId == null);
+    expect(unbilled.map((e) => e.description)).toEqual(['Older work']);
+  });
+});
