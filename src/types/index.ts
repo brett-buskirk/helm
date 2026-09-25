@@ -108,16 +108,46 @@ export interface Invoice {
   updatedAt: Date;
 }
 
+/**
+ * Where a deposit came from. `invoice` is money against an invoice; everything
+ * else is income that never passes through the invoicing pipeline.
+ */
+export type IncomeSource =
+  | 'invoice'
+  | 'owner-contribution'
+  | 'cashback'
+  | 'donation'
+  | 'interest'
+  | 'other';
+
+/**
+ * A deposit — the single income ledger.
+ *
+ * Invoice payments carry an `invoiceId` and a `clientId`; other income (an
+ * owner's transfer, card cashback, a donation) carries neither. Keeping both in
+ * one table means the dashboard, the tax set-aside, and the cash-flow chart all
+ * read from one place rather than unioning two.
+ *
+ * `taxable` is materialized on the record rather than derived from `source` at
+ * read time, so what a deposit was treated as stays auditable even if the
+ * per-source defaults are later changed.
+ */
 export interface Payment {
   id?: number;
   isDemo?: boolean;
-  invoiceId: number;
-  clientId: number;
+  /** Present for invoice payments only. */
+  invoiceId?: number;
+  /** Present for invoice payments, and optionally for income attributed to a client. */
+  clientId?: number;
+  source: IncomeSource;
+  /** Counts toward revenue, profit, and the tax set-aside. */
+  taxable: boolean;
   amount: number;
   date: Date;
   method?: string;
   notes?: string;
   createdAt: Date;
+  updatedAt?: Date;
 }
 
 export type ExpenseRecurrence = 'monthly' | 'quarterly' | 'annual';

@@ -27,7 +27,7 @@ export const DATE_FIELDS: Record<string, string[]> = {
   proposals: ['validUntil', 'createdAt', 'updatedAt'],
   agreements: ['createdAt', 'updatedAt'],
   invoices: ['issueDate', 'dueDate', 'createdAt', 'updatedAt'],
-  payments: ['date', 'createdAt'],
+  payments: ['date', 'createdAt', 'updatedAt'],
   expenses: ['date', 'nextDue', 'createdAt', 'updatedAt'],
   documents: ['createdAt', 'updatedAt'],
   timeEntries: ['date', 'createdAt', 'updatedAt'],

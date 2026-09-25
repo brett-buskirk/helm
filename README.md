@@ -49,7 +49,13 @@ Your data lives only in that browser profile's storage on your machine, so
   into an invoice; cancelling an invoice releases its hours again.
 - **Expenses & taxes** — categorized expenses, deductible flags, a running 25%
   tax set-aside, and recurring expenses (monthly/quarterly/annual) that Helm
-  prompts you to log when due.
+  prompts you to log when due. Both expense tables sort by any column and filter
+  by category, client, and tag.
+- **Income** — one ledger for every deposit. Invoice payments land here
+  automatically; record owner's contributions, cashback, donations, and interest
+  alongside them. Helm separates taxable **revenue** from total **money in**, so
+  profit, margin, and the tax set-aside stay honest when cash arrives that isn't
+  earnings.
 - **Documents & templates** — a vault of MSA/NDA/SOW/Proposal templates with
   variable substitution; generate client-specific docs and export branded PDFs.
 - **Toolbox** — customizable quick links to the tools you use (cloud consoles,
@@ -132,7 +138,7 @@ npm run tauri:build    # installers → src-tauri/target/release/bundle/
 src/
 ├── components/
 │   ├── clients/ projects/ invoices/ proposals/
-│   ├── documents/ time/ expenses/          # feature forms & PDFs
+│   ├── documents/ time/ expenses/ income/  # feature forms & PDFs
 │   ├── command/        # ⌘K command palette
 │   ├── security/       # unlock gate + screen
 │   ├── layout/         # AppLayout, Sidebar
@@ -142,7 +148,7 @@ src/
 ├── pages/              # one file per route
 ├── types/              # entity interfaces + union types
 └── utils/              # backup, crypto, vault, savePdf, pdf, image,
-                        # format, date, invoice, retainer, time,
+                        # format, date, invoice, retainer, time, income,
                         # dashboard, links, sampleData
 src-tauri/              # Tauri (Rust) desktop wrapper
 ```

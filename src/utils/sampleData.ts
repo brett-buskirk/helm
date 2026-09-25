@@ -341,8 +341,9 @@ export async function loadSampleData(): Promise<void> {
     const id = (await db.invoices.add(buildInvoice(seed) as Invoice)) as number;
     if (payment) {
       await db.payments.add({
-        ...DEMO, invoiceId: id, clientId: seed.clientId, amount: payment.amount,
-        date: payment.date, method: payment.method, createdAt: payment.date,
+        ...DEMO, invoiceId: id, clientId: seed.clientId, source: 'invoice', taxable: true,
+        amount: payment.amount, date: payment.date, method: payment.method,
+        createdAt: payment.date,
       });
     }
     return id;
