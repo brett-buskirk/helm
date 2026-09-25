@@ -55,6 +55,12 @@ All notable changes to helm are documented here. The format is based on
 
 ### Fixed
 
+- **Date repair now runs on its own** — a database restored before Helm 1.2 has
+  its dates stored as text, which silently scrambles every date-sorted list.
+  Helm now checks on load and repairs it, reporting what it fixed; previously
+  the repair waited to be found on the Security page, where a database could sit
+  broken indefinitely. It is idempotent, writes only date fields, and does
+  nothing at all on a healthy database. The manual control remains as a fallback.
 - **Invoice ordering on a restored database** — the invoice list is sorted in
   memory through a date coercion, so it reads chronologically even where a
   backup restored before the date-type fix left a date stored as text. Running

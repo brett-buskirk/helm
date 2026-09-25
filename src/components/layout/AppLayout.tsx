@@ -2,11 +2,21 @@ import { useState, useEffect, useRef } from 'react';
 import { Outlet, useLocation } from 'react-router';
 import { Sidebar } from './Sidebar';
 import { CommandPalette } from '../command/CommandPalette';
+import { Toast } from '../ui/Toast';
+import { useToast } from '../../hooks/useToast';
+import { useDateRepair } from '../../hooks/useDateRepair';
 
 export function AppLayout() {
   const [searchOpen, setSearchOpen] = useState(false);
   const mainRef = useRef<HTMLElement>(null);
   const location = useLocation();
+  const { toast, showToast } = useToast();
+
+  // AppLayout mounts inside the vault gate, so an encrypted database is already
+  // unlocked by the time this runs. Silent no-op on a healthy database.
+  useDateRepair((count) =>
+    showToast('success', `Repaired ${count} record${count === 1 ? '' : 's'} — date ordering corrected.`),
+  );
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -47,6 +57,7 @@ export function AppLayout() {
         <Outlet />
       </main>
       <CommandPalette isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
+      <Toast toast={toast} />
     </div>
   );
 }
