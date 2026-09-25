@@ -6,6 +6,15 @@ All notable changes to helm are documented here. The format is based on
 
 ## [Unreleased]
 
+### Added
+
+- **Sortable, filterable expense tables** — click any column header on Expenses
+  to sort by it (date, vendor, category, client, amount; and on the Recurring
+  tab, repeats, per-year, and next-due), and narrow the list with new **client**
+  and **tag** filters alongside the existing search, category, and period
+  controls. Rows with no value sort last in either direction, and sorting never
+  changes the summary totals.
+
 ### Fixed
 
 - **Dates survive a backup restore** — importing a backup rewrote every date as
