@@ -2,7 +2,7 @@ import { db } from '../db';
 import type { Invoice, InvoiceLineItem, Project, TimeEntry } from '../types';
 import { generateInvoiceNumber, incrementInvoiceNumber, calculateDueDate } from './invoice';
 import { formatDate, toDateInputValue, parseDateInput } from './format';
-import { coerceDate } from './date';
+import { coerceDate, startOfDay, endOfDay } from './date';
 
 /** Round to cents to avoid floating-point drift in money math. */
 function round2(n: number): number {
@@ -12,6 +12,36 @@ function round2(n: number): number {
 /** An entry is billable income only if flagged billable and not yet on an invoice. */
 export function isUnbilled(entry: TimeEntry): boolean {
   return entry.billable && entry.invoiceId == null;
+}
+
+/**
+ * An inclusive date window. Both ends are whole days: `from` counts from its
+ * first instant and `to` through its last, so an entry dated on either boundary
+ * is included no matter what time component it carries.
+ */
+export interface DateRange {
+  from?: Date | null;
+  to?: Date | null;
+}
+
+/** True if the entry's date falls inside the (inclusive) range. */
+export function isInRange(entry: Pick<TimeEntry, 'date'>, range?: DateRange): boolean {
+  if (!range?.from && !range?.to) return true;
+  const d = coerceDate(entry.date as unknown as Date);
+  if (!d) return false;
+  if (range.from && d < startOfDay(range.from)) return false;
+  if (range.to && d > endOfDay(range.to)) return false;
+  return true;
+}
+
+/** A project's unbilled, billable entries, optionally narrowed to a date range. */
+export function unbilledInRange(entries: TimeEntry[], range?: DateRange): TimeEntry[] {
+  return entries.filter((e) => isUnbilled(e) && isInRange(e, range));
+}
+
+/** "Sep 1 – Sep 30, 2026" — the period an invoice's hours were worked. */
+export function formatRangeLabel(from: Date, to: Date): string {
+  return `${formatDate(from)} – ${formatDate(to)}`;
 }
 
 export interface HoursSummary {
@@ -58,18 +88,25 @@ export async function effectiveHourlyRate(project: Project): Promise<number> {
  * Roll a project's unbilled, billable time entries into a single draft invoice,
  * then mark those entries as billed (invoiceId set). Atomic. Returns the new
  * invoice id, or null when there are no unbilled hours to bill.
+ *
+ * With a `range`, only entries dated inside it are billed and the rest stay
+ * unbilled for a later invoice — the usual case being one invoice per month.
+ * Both ends are inclusive whole days. The range is applied inside the
+ * transaction, so the entries counted are exactly the entries billed.
  */
 export async function createInvoiceFromUnbilledHours(
   project: Project,
   issueDate: Date = new Date(),
+  range?: DateRange,
 ): Promise<number | null> {
   if (!project.id) throw new Error('Cannot invoice hours for an unsaved project.');
   const projectId = project.id;
   const rate = await effectiveHourlyRate(project);
 
   return db.transaction('rw', [db.timeEntries, db.invoices, db.settings], async () => {
-    const entries = (await db.timeEntries.where('projectId').equals(projectId).toArray()).filter(
-      isUnbilled,
+    const entries = unbilledInRange(
+      await db.timeEntries.where('projectId').equals(projectId).toArray(),
+      range,
     );
     if (entries.length === 0) return null;
 
@@ -80,6 +117,13 @@ export async function createInvoiceFromUnbilledHours(
       parseDateInput(calculateDueDate(toDateInputValue(issueDate), paymentTerms)) ?? issueDate;
     const invoiceNumber = await generateInvoiceNumber();
     const now = new Date();
+
+    // A ranged invoice states its period, so the client sees what it covers
+    // without reading down the line items. (Notes render in the PDF footer.)
+    const notes =
+      range?.from && range?.to
+        ? `Services rendered ${formatRangeLabel(range.from, range.to)}.`
+        : undefined;
 
     const payload: Omit<Invoice, 'id'> = {
       clientId: project.clientId,
@@ -96,6 +140,7 @@ export async function createInvoiceFromUnbilledHours(
       amountPaid: 0,
       balanceDue: subtotal,
       paymentTerms,
+      notes,
       createdAt: now,
       updatedAt: now,
     };
