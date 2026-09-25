@@ -12,6 +12,7 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { Toast } from '../components/ui/Toast';
 import { TimeEntryForm } from '../components/time/TimeEntryForm';
+import { TimeEntryDetail } from '../components/time/TimeEntryDetail';
 import { useToast } from '../hooks/useToast';
 import { formatDate, formatCurrency } from '../utils/format';
 import { isInPeriod, type Period } from '../utils/date';
@@ -46,6 +47,7 @@ export default function Time() {
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editing, setEditing] = useState<TimeEntry | undefined>();
+  const [detail, setDetail] = useState<TimeEntry | undefined>();
   const [deleteTarget, setDeleteTarget] = useState<TimeEntry | undefined>();
   const [deleting, setDeleting] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -110,6 +112,16 @@ export default function Time() {
     return summarizeHours(entries, projectRate);
   }, [selectedProject, allEntries, projectRate]);
 
+  // Value of the entry open in the detail drawer, at its project's effective
+  // rate (the project's own, else the client default).
+  const detailProject = detail ? projectMap.get(detail.projectId) : undefined;
+  const detailRate = useLiveQuery(
+    () => (detailProject ? effectiveHourlyRate(detailProject) : Promise.resolve(0)),
+    [detailProject?.id, detailProject?.rate],
+  ) ?? 0;
+  const detailValue =
+    detail?.billable ? Math.round(detail.hours * detailRate * 100) / 100 : undefined;
+
   function openCreate() {
     setEditing(undefined);
     setDrawerOpen(true);
@@ -117,6 +129,19 @@ export default function Time() {
   function openEdit(entry: TimeEntry) {
     setEditing(entry);
     setDrawerOpen(true);
+  }
+  /**
+   * Edit from the detail drawer: close detail first, then open the form. The
+   * two drawers share the same slot, so stacking them would trap focus in the
+   * one underneath.
+   */
+  function editFromDetail(entry: TimeEntry) {
+    setDetail(undefined);
+    openEdit(entry);
+  }
+  function deleteFromDetail(entry: TimeEntry) {
+    setDetail(undefined);
+    setDeleteTarget(entry);
   }
 
   async function handleDelete() {
@@ -304,7 +329,11 @@ export default function Time() {
                 const client = clientMap.get(entry.clientId);
                 const billed = entry.invoiceId != null;
                 return (
-                  <tr key={entry.id} className="group">
+                  <tr
+                    key={entry.id}
+                    className="group cursor-pointer transition-colors hover:bg-slate-800/60"
+                    onClick={() => setDetail(entry)}
+                  >
                     <td className="px-4 py-3 text-sm tabular-nums text-slate-400 whitespace-nowrap">
                       {formatDate(entry.date as unknown as Date)}
                     </td>
@@ -312,8 +341,25 @@ export default function Time() {
                       <p className="text-sm font-medium text-slate-200">{project?.name ?? '—'}</p>
                       <p className="text-xs text-slate-500">{client?.company ?? '—'}</p>
                     </td>
-                    <td className="px-4 py-3 text-sm text-slate-400 max-w-[280px]">
-                      <p className="truncate">{entry.description}</p>
+                    <td className="max-w-[280px] px-4 py-3 text-sm text-slate-400">
+                      {/*
+                        The row is clickable for the mouse, but a <tr> can't take
+                        focus without breaking table semantics for screen readers.
+                        The description doubles as the keyboard affordance: it's
+                        the field the drawer exists to show in full, so its own
+                        text is a meaningful accessible name.
+                      */}
+                      <button
+                        type="button"
+                        title="View details"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDetail(entry);
+                        }}
+                        className="block w-full truncate text-left transition-colors hover:text-slate-200"
+                      >
+                        {entry.description}
+                      </button>
                     </td>
                     <td className="px-4 py-3 text-sm tabular-nums font-medium text-slate-200 whitespace-nowrap">
                       {formatHours(entry.hours)}
@@ -323,7 +369,10 @@ export default function Time() {
                         <Badge variant="neutral">Non-billable</Badge>
                       ) : billed ? (
                         <button
-                          onClick={() => navigate(`/invoices/${entry.invoiceId}`)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/invoices/${entry.invoiceId}`);
+                          }}
                           title="View invoice"
                         >
                           <Badge variant="success">Billed</Badge>
@@ -341,14 +390,20 @@ export default function Time() {
                         ) : (
                           <>
                             <button
-                              onClick={() => openEdit(entry)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openEdit(entry);
+                              }}
                               className="rounded p-1.5 text-slate-400 hover:bg-slate-700 hover:text-slate-100 transition-colors"
                               aria-label="Edit time entry"
                             >
                               <Pencil size={13} />
                             </button>
                             <button
-                              onClick={() => setDeleteTarget(entry)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDeleteTarget(entry);
+                              }}
                               className="rounded p-1.5 text-red-500 hover:bg-red-950 hover:text-red-300 transition-colors"
                               aria-label="Delete time entry"
                             >
@@ -365,6 +420,18 @@ export default function Time() {
           </table>
         </div>
       )}
+
+      <TimeEntryDetail
+        entry={detail}
+        project={detailProject}
+        client={detail ? clientMap.get(detail.clientId) : undefined}
+        value={detailValue}
+        isOpen={!!detail}
+        onClose={() => setDetail(undefined)}
+        onEdit={editFromDetail}
+        onDelete={deleteFromDetail}
+        onViewInvoice={(invoiceId) => navigate(`/invoices/${invoiceId}`)}
+      />
 
       <TimeEntryForm
         entry={editing}

@@ -8,6 +8,11 @@ All notable changes to helm are documented here. The format is based on
 
 ### Added
 
+- **Time entry detail** — click a row on the Time page (or tab to its
+  description) to open a panel with the full description, client, project,
+  hours, status, and the entry's value at the project's rate, with Edit and
+  Delete alongside. Billed entries stay locked and link to their invoice.
+
 - **Income beyond invoices** — a new **Income** page records money that never
   went through an invoice: owner's contributions, cashback and rebates,
   donations, interest, and anything else. Invoice payments appear in the same
@@ -29,6 +34,10 @@ All notable changes to helm are documented here. The format is based on
 
 ### Fixed
 
+- **Dialog titles** — `Drawer` and `Modal` each gave their heading the same
+  fixed element id, so a screen reader announced every open dialog on a page
+  with the first one's title (Security shows four modals at once). Each instance
+  now gets its own id.
 - **Dates survive a backup restore** — importing a backup rewrote every date as
   text (JSON has no date type), and IndexedDB orders keys by type before value,
   so any list sorted by date came out in the wrong order while still *displaying*
