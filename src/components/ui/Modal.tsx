@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from 'react';
+import { useId, useEffect, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
@@ -20,6 +20,9 @@ const sizeClasses = {
 
 export function Modal({ isOpen, onClose, title, children, size = 'md', footer }: ModalProps) {
   const trapRef = useFocusTrap<HTMLDivElement>(isOpen);
+  // Per-instance id — Security mounts four modals at once, which previously all
+  // shared id="modal-title" and were announced with the first one's heading.
+  const titleId = useId();
   useEffect(() => {
     if (!isOpen) return;
     document.body.style.overflow = 'hidden';
@@ -40,7 +43,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md', footer }:
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
-      aria-labelledby="modal-title"
+      aria-labelledby={titleId}
     >
       <div
         className="absolute inset-0 bg-black/70 backdrop-blur-sm"
@@ -55,7 +58,7 @@ export function Modal({ isOpen, onClose, title, children, size = 'md', footer }:
         ].join(' ')}
       >
         <div className="flex shrink-0 items-center justify-between border-b border-slate-700 px-5 py-4">
-          <h2 id="modal-title" className="text-base font-semibold text-slate-100">
+          <h2 id={titleId} className="text-base font-semibold text-slate-100">
             {title}
           </h2>
           <button

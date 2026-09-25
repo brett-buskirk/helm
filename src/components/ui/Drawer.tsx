@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useId, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
@@ -20,6 +20,10 @@ const sizeClasses = {
 
 export function Drawer({ isOpen, onClose, title, children, footer, size = 'md' }: DrawerProps) {
   const trapRef = useFocusTrap<HTMLDivElement>(isOpen);
+  // Per-instance id: drawers stay mounted while closed, so a page showing more
+  // than one (Time has a detail drawer and an edit form) would otherwise emit
+  // duplicate ids and every dialog would be announced with the first one's title.
+  const titleId = useId();
   useEffect(() => {
     if (!isOpen) return;
     document.body.style.overflow = 'hidden';
@@ -49,7 +53,7 @@ export function Drawer({ isOpen, onClose, title, children, footer, size = 'md' }
         ref={trapRef}
         role="dialog"
         aria-modal="true"
-        aria-labelledby="drawer-title"
+        aria-labelledby={titleId}
         inert={!isOpen}
         className={[
           'fixed right-0 top-0 z-50 flex h-full flex-col bg-slate-800 border-l border-slate-700 shadow-2xl',
@@ -60,7 +64,7 @@ export function Drawer({ isOpen, onClose, title, children, footer, size = 'md' }
       >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-slate-700 px-6 py-4 shrink-0">
-          <h2 id="drawer-title" className="text-base font-semibold text-slate-100">
+          <h2 id={titleId} className="text-base font-semibold text-slate-100">
             {title}
           </h2>
           <button
