@@ -11,7 +11,13 @@ export interface ClientRevenue {
   total: number;
 }
 
-/** Top clients by payments received since `since` (null = all time), highest first. */
+/**
+ * Top clients by payments received since `since` (null = all time), highest first.
+ *
+ * Income with no client -- an owner's transfer, cashback -- is skipped rather
+ * than bucketed under a blank name; this table answers "who pays me the most",
+ * which only invoice-style income can speak to.
+ */
 export function topClientsByRevenue(
   payments: Payment[],
   clients: Client[],
@@ -20,6 +26,7 @@ export function topClientsByRevenue(
 ): ClientRevenue[] {
   const byClient = new Map<number, number>();
   for (const p of payments) {
+    if (p.clientId == null) continue;
     if (since) {
       const d = coerceDate(p.date as unknown as Date);
       if (!d || d < since) continue;

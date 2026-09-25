@@ -14,6 +14,7 @@ import {
   Clock,
   Trash2,
   Wrench,
+  Wallet,
   Lock,
   ShieldCheck,
 } from 'lucide-react';
@@ -31,6 +32,7 @@ const NAV_ITEMS = [
   { to: '/projects', label: 'Projects', icon: Briefcase },
   { to: '/invoices', label: 'Invoices', icon: FileText },
   { to: '/time', label: 'Time', icon: Clock },
+  { to: '/income', label: 'Income', icon: Wallet },
   { to: '/expenses', label: 'Expenses', icon: Receipt },
   { to: '/proposals', label: 'Proposals', icon: ClipboardList },
   { to: '/documents', label: 'Documents', icon: FolderOpen },

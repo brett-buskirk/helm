@@ -8,6 +8,18 @@ All notable changes to helm are documented here. The format is based on
 
 ### Added
 
+- **Income beyond invoices** — a new **Income** page records money that never
+  went through an invoice: owner's contributions, cashback and rebates,
+  donations, interest, and anything else. Invoice payments appear in the same
+  ledger (read-only — they belong to their invoice), so one screen shows every
+  deposit, sortable and filterable by source and tax treatment.
+- **Revenue vs. Money In** — the dashboard now separates taxable **revenue**
+  from total **money in**. An owner's transfer isn't earnings and cashback is
+  normally a rebate, so counting either as income would inflate profit, margin,
+  and the 25% tax set-aside. Each source carries a sensible taxable default that
+  you can override per entry, and the value is stored on the record so how a
+  deposit was treated stays auditable.
+
 - **Sortable, filterable expense tables** — click any column header on Expenses
   to sort by it (date, vendor, category, client, amount; and on the Recurring
   tab, repeats, per-year, and next-due), and narrow the list with new **client**

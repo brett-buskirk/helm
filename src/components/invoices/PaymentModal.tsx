@@ -65,6 +65,9 @@ export function PaymentModal({ invoice, isOpen, onClose, onSuccess }: PaymentMod
     await db.payments.add({
       invoiceId: invoice.id,
       clientId: invoice.clientId,
+      // Money against an invoice is always earned revenue.
+      source: 'invoice',
+      taxable: true,
       amount: data.amount,
       date: paymentDate,
       method: data.method || undefined,

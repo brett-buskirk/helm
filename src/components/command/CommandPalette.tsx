@@ -13,6 +13,7 @@ import {
   FilePlus,
   Clock,
   Receipt,
+  Wallet,
   Download,
   Lock,
   LayoutDashboard,
@@ -71,6 +72,7 @@ export function CommandPalette({ isOpen, onClose }: Props) {
       { id: 'new-document', label: 'New Document', group: 'Actions', icon: FileText, keywords: 'create template contract', run: () => go('/documents/new') },
       { id: 'log-time', label: 'Log Time', group: 'Actions', icon: Clock, keywords: 'track hours', run: () => go('/time') },
       { id: 'add-expense', label: 'Add Expense', group: 'Actions', icon: Receipt, keywords: 'spend cost', run: () => go('/expenses') },
+      { id: 'add-income', label: 'Record Income', group: 'Actions', icon: Wallet, keywords: 'deposit owner transfer cashback donation', run: () => go('/income') },
       {
         id: 'export-backup',
         label: 'Export Backup',
@@ -104,6 +106,7 @@ export function CommandPalette({ isOpen, onClose }: Props) {
       { id: 'go-invoices', label: 'Invoices', group: 'Go to', icon: FileText, run: () => go('/invoices') },
       { id: 'go-time', label: 'Time', group: 'Go to', icon: Clock, run: () => go('/time') },
       { id: 'go-expenses', label: 'Expenses', group: 'Go to', icon: Receipt, run: () => go('/expenses') },
+      { id: 'go-income', label: 'Income', group: 'Go to', icon: Wallet, run: () => go('/income') },
       { id: 'go-proposals', label: 'Proposals', group: 'Go to', icon: ClipboardList, run: () => go('/proposals') },
       { id: 'go-documents', label: 'Documents', group: 'Go to', icon: FolderOpen, run: () => go('/documents') },
       { id: 'go-toolbox', label: 'Toolbox', group: 'Go to', icon: Wrench, run: () => go('/toolbox') },

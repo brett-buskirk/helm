@@ -24,6 +24,7 @@ import {
   Landmark,
   Users,
   Repeat,
+  Wallet,
 } from 'lucide-react';
 import { db } from '../db';
 import type { Project } from '../types';
@@ -36,6 +37,7 @@ import { getEffectiveStatus } from '../utils/invoice';
 import { createRetainerInvoice, findRetainerInvoiceForMonth, retainerPeriodLabel } from '../utils/retainer';
 import { topClientsByRevenue, unbilledValue } from '../utils/dashboard';
 import { summarizeRecurring } from '../utils/recurringExpense';
+import { incomeSourceLabel, isTaxable, paymentSource } from '../utils/income';
 import { GettingStarted } from '../components/onboarding/GettingStarted';
 import { WelcomeIntro } from '../components/onboarding/WelcomeIntro';
 import {
@@ -125,16 +127,29 @@ export default function Dashboard() {
   const qEnd = endOfQuarter(now);
   const yStart = startOfYear(now.getFullYear());
 
-  const { incomeMTD, incomeQTD, incomeYTD } = useMemo(() => {
-    let mtd = 0, qtd = 0, ytd = 0;
+  // Revenue (taxable earnings) and money in (every deposit) are tracked apart.
+  // An owner's transfer or card cashback is cash arriving but not income, so
+  // folding it into revenue would inflate profit, margin, and the set-aside.
+  const { incomeMTD, incomeQTD, incomeYTD, moneyInYTD, nonRevenueYTD } = useMemo(() => {
+    let mtd = 0, qtd = 0, ytd = 0, allYtd = 0;
     for (const p of allPayments) {
       const d = coerceDate(p.date as unknown as Date);
       if (!d || d > now) continue; // "to-date" excludes anything dated in the future
-      if (d >= yStart) ytd += p.amount;
-      if (d >= qStart && d <= qEnd) qtd += p.amount;
-      if (d >= mStart && d <= mEnd) mtd += p.amount;
+      const taxable = isTaxable(p);
+      if (d >= yStart) {
+        allYtd += p.amount;
+        if (taxable) ytd += p.amount;
+      }
+      if (taxable && d >= qStart && d <= qEnd) qtd += p.amount;
+      if (taxable && d >= mStart && d <= mEnd) mtd += p.amount;
     }
-    return { incomeMTD: mtd, incomeQTD: qtd, incomeYTD: ytd };
+    return {
+      incomeMTD: mtd,
+      incomeQTD: qtd,
+      incomeYTD: ytd,
+      moneyInYTD: allYtd,
+      nonRevenueYTD: allYtd - ytd,
+    };
   }, [allPayments, mStart.getTime(), mEnd.getTime(), qStart.getTime(), qEnd.getTime(), yStart.getTime()]);
 
   const { expensesMTD, expensesYTD } = useMemo(() => {
@@ -189,7 +204,10 @@ export default function Dashboard() {
     return lastNMonths(6, now).map((monthDate) => {
       const start = startOfMonth(monthDate);
       const end = endOfMonth(monthDate);
+      // Revenue only — the net line is income minus expenses, and non-revenue
+      // deposits would make that read as profit it isn't.
       const income = allPayments.reduce((s, p) => {
+        if (!isTaxable(p)) return s;
         const d = coerceDate(p.date as unknown as Date);
         return d && d >= start && d <= end ? s + p.amount : s;
       }, 0);
@@ -241,6 +259,12 @@ export default function Dashboard() {
                 {' · '}
                 <span className="text-slate-400">
                   {formatCurrency(incomeYTD)} earned in {now.getFullYear()}
+                  {nonRevenueYTD > 0 && (
+                    <span className="text-slate-600">
+                      {' '}
+                      · {formatCurrency(nonRevenueYTD)} other money in
+                    </span>
+                  )}
                 </span>
               </>
             )}
@@ -256,6 +280,9 @@ export default function Dashboard() {
           <Button size="sm" variant="secondary" onClick={() => navigate('/expenses')}>
             <Plus size={14} /> Expense
           </Button>
+          <Button size="sm" variant="secondary" onClick={() => navigate('/income')}>
+            <Wallet size={14} /> Income
+          </Button>
         </div>
       </div>
 
@@ -267,7 +294,22 @@ export default function Dashboard() {
 
       {/* KPI row — year to date */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <KpiCard label="Income — YTD" value={formatCurrency(incomeYTD)} icon={TrendingUp} accent={incomeYTD > 0 ? 'green' : undefined}>
+        <KpiCard
+          label="Revenue — YTD"
+          value={formatCurrency(incomeYTD)}
+          icon={TrendingUp}
+          accent={incomeYTD > 0 ? 'green' : undefined}
+          badge={
+            nonRevenueYTD > 0 ? (
+              <span
+                className="rounded bg-slate-700/70 px-1.5 py-0.5 text-xs font-medium text-slate-300"
+                title={`${formatCurrency(moneyInYTD)} received in total, of which ${formatCurrency(nonRevenueYTD)} is not taxable income`}
+              >
+                {formatCurrency(moneyInYTD)} in
+              </span>
+            ) : undefined
+          }
+        >
           <div className="mt-2 flex justify-between text-xs text-slate-600">
             <span>MTD {formatCurrency(incomeMTD)}</span>
             <span>QTD {formatCurrency(incomeQTD)}</span>
@@ -287,7 +329,7 @@ export default function Dashboard() {
             ) : undefined
           }
         >
-          <p className="mt-2 text-xs text-slate-600">Income minus expenses</p>
+          <p className="mt-2 text-xs text-slate-600">Revenue minus expenses</p>
         </KpiCard>
 
         <KpiCard label="Expenses — YTD" value={formatCurrency(expensesYTD)} icon={TrendingDown} accent={expensesYTD > 0 ? 'red' : undefined}>
@@ -295,7 +337,7 @@ export default function Dashboard() {
         </KpiCard>
 
         <KpiCard label="Tax Set-Aside — YTD" value={formatCurrency(taxOwedYTD)} icon={Landmark} accent="amber">
-          <p className="mt-2 text-xs text-slate-600">25% reserve on income</p>
+          <p className="mt-2 text-xs text-slate-600">25% reserve on revenue</p>
         </KpiCard>
       </div>
 
@@ -440,12 +482,16 @@ export default function Dashboard() {
                     <tr
                       key={p.id}
                       className="cursor-pointer hover:bg-slate-800 transition-colors"
-                      onClick={() => navigate(`/invoices/${p.invoiceId}`)}
+                      onClick={() => navigate(p.invoiceId != null ? `/invoices/${p.invoiceId}` : '/income')}
                     >
                       <td className="px-4 py-3 text-sm tabular-nums text-slate-500 whitespace-nowrap">
                         {formatDate(p.date as unknown as Date)}
                       </td>
-                      <td className="px-4 py-3 text-sm text-slate-200">{clientMap.get(p.clientId)?.company ?? '—'}</td>
+                      <td className="px-4 py-3 text-sm text-slate-200">
+                        {p.clientId != null
+                          ? clientMap.get(p.clientId)?.company ?? '—'
+                          : incomeSourceLabel(paymentSource(p))}
+                      </td>
                       <td className="px-4 py-3 text-right text-sm tabular-nums font-medium text-emerald-400">
                         {formatCurrency(p.amount)}
                       </td>

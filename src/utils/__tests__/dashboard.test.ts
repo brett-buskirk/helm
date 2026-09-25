@@ -39,6 +39,22 @@ describe('topClientsByRevenue', () => {
     expect(top).toHaveLength(1);
     expect(top[0].company).toBe('Unknown');
   });
+
+  it('skips income that has no client, such as an owner transfer or cashback', () => {
+    // The income ledger now holds non-invoice deposits with no clientId. They
+    // must not be bucketed under a blank name in a "who pays me most" table.
+    const result = topClientsByRevenue(
+      [
+        { clientId: 1, amount: 500, date: new Date('2026-05-01') },
+        { amount: 9000, date: new Date('2026-05-02') },
+        { clientId: undefined, amount: 400, date: new Date('2026-05-03') },
+      ] as never[],
+      [{ id: 1, company: 'Acme' }] as never[],
+      null,
+    );
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({ clientId: 1, company: 'Acme', total: 500 });
+  });
 });
 
 describe('unbilledValue', () => {

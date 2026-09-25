@@ -61,7 +61,31 @@ class HelmDB extends Dexie {
       projects: '++id, clientId, status, type',
       security: '++id',
     });
+    // v6: payments become the single income ledger. invoiceId/clientId turn
+    // optional so non-invoice income (owner's transfers, cashback, donations)
+    // lives alongside invoice payments, and `source`/`taxable` classify each
+    // deposit. Dexie skips undefined keys, so the invoiceId index keeps working
+    // for the invoice lookups -- rows without one simply aren't in it.
+    this.version(6)
+      .stores({
+        payments: '++id, invoiceId, clientId, date, source',
+      })
+      .upgrade(async (tx) => {
+        await tx.table('payments').toCollection().modify(stampAsInvoiceIncome);
+      });
   }
+}
+
+/**
+ * The v6 upgrade step, applied to each pre-v6 payment row.
+ *
+ * Every payment that existed before the income ledger was, by definition, money
+ * against an invoice — so it is taxable revenue. Exported so the migration's
+ * behaviour can be asserted directly rather than only through a version bump.
+ */
+export function stampAsInvoiceIncome(payment: Partial<Payment>): void {
+  payment.source = 'invoice';
+  payment.taxable = true;
 }
 
 export const db = new HelmDB();
