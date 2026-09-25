@@ -243,3 +243,69 @@ describe('Ranged invoice generation', () => {
     expect(unbilled.map((e) => e.description)).toEqual(['Older work']);
   });
 });
+
+describe('Time report download', () => {
+  async function selectProject() {
+    renderPage();
+    const projectSelect = await screen.findByDisplayValue('All projects');
+    await userEvent.selectOptions(projectSelect, 'Platform Hardening');
+  }
+
+  beforeEach(async () => {
+    await db.timeEntries.clear();
+    await db.timeEntries.add({
+      clientId,
+      projectId,
+      date: new Date(),
+      hours: 4,
+      description: 'Reportable work',
+      billable: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    } as never);
+  });
+
+  it('stays disabled until both ends of the period are set', async () => {
+    await selectProject();
+    const button = await screen.findByRole('button', { name: /time report/i });
+    // A report prints its period in the header, so it needs a definite window —
+    // unlike invoicing, which defaults to "everything unbilled".
+    expect(button).toBeDisabled();
+
+    await userEvent.click(screen.getByLabelText('Bill from'));
+    await userEvent.click(await screen.findByRole('button', { name: 'Today' }));
+    expect(button).toBeDisabled(); // still only one end set
+
+    await userEvent.click(screen.getByLabelText('To'));
+    await userEvent.click(await screen.findByRole('button', { name: 'Today' }));
+    expect(button).toBeEnabled();
+  });
+
+  it('stays disabled when the period holds only non-billable work', async () => {
+    // Non-billable time is internal and never appears on a client's report.
+    await db.timeEntries.toCollection().modify({ billable: false });
+    await selectProject();
+
+    await userEvent.click(screen.getByLabelText('Bill from'));
+    await userEvent.click(await screen.findByRole('button', { name: 'Today' }));
+    await userEvent.click(screen.getByLabelText('To'));
+    await userEvent.click(await screen.findByRole('button', { name: 'Today' }));
+
+    expect(screen.getByRole('button', { name: /time report/i })).toBeDisabled();
+  });
+
+  it('is offered even when the work has already been invoiced', async () => {
+    // The report documents work done, not what is owed.
+    await db.timeEntries.toCollection().modify({ invoiceId: 77 });
+    await selectProject();
+
+    await userEvent.click(screen.getByLabelText('Bill from'));
+    await userEvent.click(await screen.findByRole('button', { name: 'Today' }));
+    await userEvent.click(screen.getByLabelText('To'));
+    await userEvent.click(await screen.findByRole('button', { name: 'Today' }));
+
+    expect(screen.getByRole('button', { name: /time report/i })).toBeEnabled();
+    // ...while there is nothing left to invoice.
+    expect(screen.getByRole('button', { name: /generate invoice/i })).toBeDisabled();
+  });
+});

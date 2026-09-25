@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Plus, Clock, Pencil, Trash2, FilePlus } from 'lucide-react';
+import { Plus, Clock, Pencil, Trash2, FilePlus, FileDown } from 'lucide-react';
 import { db } from '../db';
 import type { TimeEntry, Project } from '../types';
 import { PageHeader } from '../components/ui/PageHeader';
@@ -13,7 +13,9 @@ import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { Toast } from '../components/ui/Toast';
 import { TimeEntryForm } from '../components/time/TimeEntryForm';
 import { TimeEntryDetail } from '../components/time/TimeEntryDetail';
+import { TimeReportPDF } from '../components/time/TimeReportPDF';
 import { useToast } from '../hooks/useToast';
+import { usePdfDownload } from '../hooks/usePdfDownload';
 import { formatDate, formatCurrency } from '../utils/format';
 import { isInPeriod, type Period } from '../utils/date';
 import {
@@ -26,6 +28,7 @@ import {
 } from '../utils/time';
 import { DatePicker } from '../components/ui/DatePicker';
 import { parseDateInput } from '../utils/format';
+import { entriesForReport, reportFileName } from '../utils/timeReport';
 
 const PERIOD_OPTIONS = [
   { value: 'month', label: 'This Month' },
@@ -48,6 +51,9 @@ function formatHours(h: number): string {
 export default function Time() {
   const navigate = useNavigate();
   const { toast, showToast } = useToast();
+  const { download: downloadPdf, busy: pdfBusy } = usePdfDownload((msg) =>
+    showToast('error', msg),
+  );
 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editing, setEditing] = useState<TimeEntry | undefined>();
@@ -69,6 +75,7 @@ export default function Time() {
   const allEntries = useLiveQuery(() => db.timeEntries.orderBy('date').reverse().toArray()) ?? [];
   const allClients = useLiveQuery(() => db.clients.toArray()) ?? [];
   const allProjects = useLiveQuery(() => db.projects.toArray()) ?? [];
+  const settings = useLiveQuery(() => db.settings.limit(1).first());
 
   const clientMap = useMemo(() => new Map(allClients.map((c) => [c.id!, c])), [allClients]);
   const projectMap = useMemo(() => new Map(allProjects.map((p) => [p.id!, p])), [allProjects]);
@@ -133,6 +140,18 @@ export default function Time() {
   }, [selectedProject, allEntries, projectRate, billRange]);
 
   const rangeInvalid = !!(billRange.from && billRange.to && billRange.from > billRange.to);
+
+  // The report covers billable work in the window whether or not it has been
+  // invoiced yet -- it documents the work done, not what is owed.
+  const reportEntries = useMemo(
+    () => (selectedProject?.id ? entriesForReport(allEntries, selectedProject.id, billRange) : []),
+    [selectedProject?.id, allEntries, billRange],
+  );
+
+  // A report needs a definite period to print in its header, so unlike invoice
+  // generation it requires both dates rather than defaulting to "everything".
+  const canDownloadReport =
+    !!selectedProject && !!billRange.from && !!billRange.to && !rangeInvalid && reportEntries.length > 0;
 
   // Value of the entry open in the detail drawer, at its project's effective
   // rate (the project's own, else the client default).
@@ -210,6 +229,22 @@ export default function Time() {
     } finally {
       setGenerating(false);
     }
+  }
+
+  async function handleDownloadReport() {
+    const client = selectedProject ? clientMap.get(selectedProject.clientId) : undefined;
+    if (!selectedProject || !client || !billRange.from || !billRange.to) return;
+    await downloadPdf(
+      <TimeReportPDF
+        project={selectedProject}
+        client={client}
+        entries={reportEntries}
+        from={billRange.from}
+        to={billRange.to}
+        settings={settings}
+      />,
+      reportFileName(client, selectedProject, billRange.from, billRange.to),
+    );
   }
 
   const clientOptions = [
@@ -352,6 +387,21 @@ export default function Time() {
                       : 'No unbilled hours'}
                   </p>
                 )}
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={handleDownloadReport}
+                  loading={pdfBusy}
+                  disabled={!canDownloadReport}
+                  title={
+                    billRange.from && billRange.to
+                      ? 'Download a client-facing report of hours worked'
+                      : 'Set both dates to download a report'
+                  }
+                >
+                  <FileDown size={13} />
+                  Time Report
+                </Button>
                 <Button
                   size="sm"
                   onClick={handleGenerateInvoice}
