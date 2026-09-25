@@ -8,6 +8,12 @@ All notable changes to helm are documented here. The format is based on
 
 ### Added
 
+- **Sortable invoice list** — click any column header on Invoices to sort by
+  invoice number, client, issue date, due date, total, balance, or status
+  (status sorts by workflow position — draft → sent → overdue → paid — rather
+  than alphabetically). Sorting now lives in the shared table component, so
+  other list pages can adopt it.
+
 - **Client-facing time report (PDF)** — a **Time Report** button in the Time
   page header opens a dialog that asks for a project and a period, previews what
   it will cover, and downloads a branded PDF. Shows the work and hours with a
@@ -49,6 +55,10 @@ All notable changes to helm are documented here. The format is based on
 
 ### Fixed
 
+- **Invoice ordering on a restored database** — the invoice list is sorted in
+  memory through a date coercion, so it reads chronologically even where a
+  backup restored before the date-type fix left a date stored as text. Running
+  **Security → Data Health → Repair Dates** still fixes the underlying data.
 - **Dialog titles** — `Drawer` and `Modal` each gave their heading the same
   fixed element id, so a screen reader announced every open dialog on a page
   with the first one's title (Security shows four modals at once). Each instance
