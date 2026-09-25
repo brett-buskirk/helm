@@ -9,11 +9,13 @@ import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
 import { Badge } from '../components/ui/Badge';
 import { Tabs } from '../components/ui/Tabs';
+import { SortableHeader } from '../components/ui/SortableHeader';
 import { EmptyState } from '../components/ui/EmptyState';
 import { ConfirmModal } from '../components/ui/ConfirmModal';
 import { Toast } from '../components/ui/Toast';
 import { ExpenseForm } from '../components/expenses/ExpenseForm';
 import { useToast } from '../hooks/useToast';
+import { useTableSort } from '../hooks/useTableSort';
 import { formatDate, formatCurrency } from '../utils/format';
 import { isInPeriod, coerceDate, isProjected, type Period } from '../utils/date';
 import {
@@ -30,6 +32,27 @@ const PERIOD_OPTIONS = [
   { value: 'year', label: 'This Year' },
   { value: 'all', label: 'All Time' },
 ];
+
+/**
+ * Tag filters mirror the badges in the Tags column, so every column on the
+ * table is either sortable or filterable (or both).
+ */
+type TagFilter = '' | 'deductible' | 'nondeductible' | 'billable' | 'recurring' | 'projected';
+
+const TAG_FILTER_OPTIONS: { value: TagFilter; label: string }[] = [
+  { value: '', label: 'All tags' },
+  { value: 'deductible', label: 'Deductible' },
+  { value: 'nondeductible', label: 'Non-deductible' },
+  { value: 'billable', label: 'Billable' },
+  { value: 'recurring', label: 'Recurring' },
+  { value: 'projected', label: 'Projected' },
+];
+
+/** Columns the All tab can sort on. */
+type ExpenseSortKey = 'date' | 'vendor' | 'category' | 'client' | 'amount';
+
+/** Columns the Recurring tab can sort on. */
+type RecurringSortKey = 'vendor' | 'category' | 'recurrence' | 'amount' | 'perYear' | 'nextDue';
 
 const RECURRING_FILTER_OPTIONS: { value: ExpenseRecurrence | 'all'; label: string }[] = [
   { value: 'all', label: 'All' },
@@ -51,8 +74,14 @@ export default function Expenses() {
   const [search, setSearch] = useState('');
   const [period, setPeriod] = useState<Period>('month');
   const [categoryFilter, setCategoryFilter] = useState('');
+  const [clientFilter, setClientFilter] = useState('');
+  const [tagFilter, setTagFilter] = useState<TagFilter>('');
   const [tab, setTab] = useState<'all' | 'recurring'>('all');
   const [recFreq, setRecFreq] = useState<ExpenseRecurrence | 'all'>('all');
+
+  // Newest first by default — the natural reading order for a ledger.
+  const allSort = useTableSort<ExpenseSortKey>('date', 'desc');
+  const recurringSort = useTableSort<RecurringSortKey>('nextDue', 'asc');
 
   const allExpenses = useLiveQuery(() =>
     db.expenses.orderBy('date').reverse().toArray(),
@@ -69,19 +98,60 @@ export default function Expenses() {
     return cats.sort();
   }, [settings, allExpenses]);
 
+  function matchesTag(e: Expense, tag: TagFilter): boolean {
+    switch (tag) {
+      case 'deductible':
+        return e.deductible;
+      case 'nondeductible':
+        return !e.deductible;
+      case 'billable':
+        return e.billable;
+      case 'recurring':
+        return !!e.recurrence;
+      case 'projected':
+        return isProjected(e.date);
+      default:
+        return true;
+    }
+  }
+
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return allExpenses.filter((e) => {
       const matchesPeriod = isInPeriod(e.date as unknown as Date, period);
       const matchesCategory = !categoryFilter || e.category === categoryFilter;
+      const matchesClient =
+        !clientFilter ||
+        (clientFilter === 'none' ? e.clientId == null : String(e.clientId) === clientFilter);
       const matchesSearch =
         !q ||
         e.vendor.toLowerCase().includes(q) ||
         e.category.toLowerCase().includes(q) ||
         (e.notes ?? '').toLowerCase().includes(q);
-      return matchesPeriod && matchesCategory && matchesSearch;
+      return matchesPeriod && matchesCategory && matchesClient && matchesTag(e, tagFilter) && matchesSearch;
     });
-  }, [allExpenses, period, categoryFilter, search]);
+  }, [allExpenses, period, categoryFilter, clientFilter, tagFilter, search]);
+
+  // Sorted view of the filtered rows. The summary bar deliberately reads from
+  // `filtered`, not this — reordering rows must never change the totals.
+  const sortedExpenses = useMemo(
+    () =>
+      allSort.sortRows(filtered, (e, key) => {
+        switch (key) {
+          case 'date':
+            return coerceDate(e.date as unknown as Date);
+          case 'vendor':
+            return e.vendor;
+          case 'category':
+            return e.category;
+          case 'client':
+            return e.clientId ? clientMap.get(e.clientId)?.company : undefined;
+          case 'amount':
+            return e.amount;
+        }
+      }),
+    [filtered, allSort, clientMap],
+  );
 
   const summary = useMemo(() => {
     // Totals reflect actuals (up to today); future-dated rows are summed
@@ -106,14 +176,32 @@ export default function Expenses() {
   // Recurring definitions (anchors) for the Recurring tab, filtered by frequency
   // and sorted by next-due (soonest / already-due first).
   const recurringAnchors = useMemo(() => allExpenses.filter((e) => e.recurrence), [allExpenses]);
-  const recurringFiltered = useMemo(() => {
-    const list = recFreq === 'all' ? recurringAnchors : recurringAnchors.filter((e) => e.recurrence === recFreq);
-    return [...list].sort(
-      (a, b) =>
-        (coerceDate(a.nextDue as unknown as Date)?.getTime() ?? 0) -
-        (coerceDate(b.nextDue as unknown as Date)?.getTime() ?? 0),
-    );
-  }, [recurringAnchors, recFreq]);
+  const recurringFiltered = useMemo(
+    () => (recFreq === 'all' ? recurringAnchors : recurringAnchors.filter((e) => e.recurrence === recFreq)),
+    [recurringAnchors, recFreq],
+  );
+
+  // Defaults to next-due ascending, so whatever is closest to due reads first.
+  const sortedRecurring = useMemo(
+    () =>
+      recurringSort.sortRows(recurringFiltered, (e, key) => {
+        switch (key) {
+          case 'vendor':
+            return e.vendor;
+          case 'category':
+            return e.category;
+          case 'recurrence':
+            return e.recurrence ? RECURRENCE_LABEL[e.recurrence] : undefined;
+          case 'amount':
+            return e.amount;
+          case 'perYear':
+            return e.recurrence ? monthlyEquivalent(e.recurrence, e.amount) * 12 : undefined;
+          case 'nextDue':
+            return coerceDate(e.nextDue as unknown as Date);
+        }
+      }),
+    [recurringFiltered, recurringSort],
+  );
   const recurringSummary = useMemo(() => summarizeRecurring(recurringFiltered), [recurringFiltered]);
 
   function openCreate() {
@@ -170,6 +258,20 @@ export default function Expenses() {
     { value: '', label: 'All categories' },
     ...categories.map((c) => ({ value: c, label: c })),
   ];
+
+  const clientFilterOptions = [
+    { value: '', label: 'All clients' },
+    { value: 'none', label: 'No client' },
+    ...[...allClients]
+      .sort((a, b) => a.company.localeCompare(b.company))
+      .map((c) => ({ value: String(c.id), label: c.company })),
+  ];
+
+  const hasActiveFilters = !!(search || categoryFilter || clientFilter || tagFilter);
+
+  // Spread into each SortableHeader so the sort state/handler pair stays in one place.
+  const headerProps = { sort: allSort.sort, onSort: allSort.toggleSort };
+  const recurringHeaderProps = { sort: recurringSort.sort, onSort: recurringSort.toggleSort };
 
   return (
     <div className="p-6 space-y-6">
@@ -260,6 +362,21 @@ export default function Expenses() {
           value={categoryFilter}
           onChange={(e) => setCategoryFilter(e.target.value)}
           className="w-52"
+          aria-label="Filter by category"
+        />
+        <Select
+          options={clientFilterOptions}
+          value={clientFilter}
+          onChange={(e) => setClientFilter(e.target.value)}
+          className="w-48"
+          aria-label="Filter by client"
+        />
+        <Select
+          options={TAG_FILTER_OPTIONS}
+          value={tagFilter}
+          onChange={(e) => setTagFilter(e.target.value as TagFilter)}
+          className="w-40"
+          aria-label="Filter by tag"
         />
         <div className="flex rounded-md border border-slate-700 overflow-hidden">
           {PERIOD_OPTIONS.map((opt) => (
@@ -321,14 +438,20 @@ export default function Expenses() {
       {filtered.length === 0 ? (
         <EmptyState
           icon={Receipt}
-          title={search || categoryFilter ? 'No expenses match your filters' : period === 'month' ? 'No expenses this month' : 'No expenses'}
+          title={
+            hasActiveFilters
+              ? 'No expenses match your filters'
+              : period === 'month'
+              ? 'No expenses this month'
+              : 'No expenses'
+          }
           description={
-            search || categoryFilter
+            hasActiveFilters
               ? 'Try adjusting your search or filters.'
               : 'Add your first expense to start tracking spending.'
           }
           action={
-            !search && !categoryFilter ? (
+            !hasActiveFilters ? (
               <Button onClick={openCreate}>
                 <Plus size={15} />
                 Add Expense
@@ -341,18 +464,17 @@ export default function Expenses() {
           <table className="w-full">
             <thead>
               <tr className="border-b border-slate-700 bg-slate-800">
-                {['Date', 'Vendor', 'Category', 'Client', 'Amount', 'Tags', ''].map((h) => (
-                  <th
-                    key={h}
-                    className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500"
-                  >
-                    {h}
-                  </th>
-                ))}
+                <SortableHeader label="Date" sortKey="date" defaultDirection="desc" {...headerProps} />
+                <SortableHeader label="Vendor" sortKey="vendor" {...headerProps} />
+                <SortableHeader label="Category" sortKey="category" {...headerProps} />
+                <SortableHeader label="Client" sortKey="client" {...headerProps} />
+                <SortableHeader label="Amount" sortKey="amount" defaultDirection="desc" {...headerProps} />
+                <SortableHeader label="Tags" {...headerProps} />
+                <SortableHeader label="" {...headerProps} />
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800 bg-slate-900">
-              {filtered.map((expense) => (
+              {sortedExpenses.map((expense) => (
                 <tr key={expense.id} className="group">
                   <td className="px-4 py-3 text-sm tabular-nums text-slate-400 whitespace-nowrap">
                     {formatDate(expense.date as unknown as Date)}
@@ -474,18 +596,17 @@ export default function Expenses() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-slate-700 bg-slate-800">
-                    {['Vendor', 'Category', 'Repeats', 'Amount', 'Per Year', 'Next Due', ''].map((h) => (
-                      <th
-                        key={h}
-                        className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-slate-500"
-                      >
-                        {h}
-                      </th>
-                    ))}
+                    <SortableHeader label="Vendor" sortKey="vendor" {...recurringHeaderProps} />
+                    <SortableHeader label="Category" sortKey="category" {...recurringHeaderProps} />
+                    <SortableHeader label="Repeats" sortKey="recurrence" {...recurringHeaderProps} />
+                    <SortableHeader label="Amount" sortKey="amount" defaultDirection="desc" {...recurringHeaderProps} />
+                    <SortableHeader label="Per Year" sortKey="perYear" defaultDirection="desc" {...recurringHeaderProps} />
+                    <SortableHeader label="Next Due" sortKey="nextDue" {...recurringHeaderProps} />
+                    <SortableHeader label="" {...recurringHeaderProps} />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800 bg-slate-900">
-                  {recurringFiltered.map((e) => {
+                  {sortedRecurring.map((e) => {
                     const due = dueOccurrences(e) > 0;
                     const perYear = e.recurrence ? monthlyEquivalent(e.recurrence, e.amount) * 12 : 0;
                     return (
