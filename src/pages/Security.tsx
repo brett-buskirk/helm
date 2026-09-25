@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { Download, Upload, Lock, ShieldCheck, ShieldOff } from 'lucide-react';
+import { Download, Upload, Lock, ShieldCheck, ShieldOff, CalendarCheck, Wrench } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { FormField } from '../components/ui/FormField';
@@ -8,6 +8,7 @@ import { Modal } from '../components/ui/Modal';
 import { SectionCard } from '../components/ui/SectionCard';
 import { exportAllData, exportEncryptedData, importData } from '../utils/backup';
 import { isEncryptionEnabled, enableEncryption, disableEncryption } from '../db/encryption';
+import { countRowsWithStringDates, repairDateFields } from '../db/dates';
 import { Toast } from '../components/ui/Toast';
 import { useToast } from '../hooks/useToast';
 
@@ -29,6 +30,10 @@ export default function Security() {
   const [exportPass, setExportPass] = useState('');
   const [exportPass2, setExportPass2] = useState('');
   const [exporting, setExporting] = useState(false);
+
+  // Data health — rows whose dates came back from a backup as strings
+  const staleDateRows = useLiveQuery(() => countRowsWithStringDates(), []);
+  const [repairing, setRepairing] = useState(false);
 
   // At-rest encryption
   const encryptionEnabled = useLiveQuery(() => isEncryptionEnabled(), []);
@@ -107,6 +112,18 @@ export default function Security() {
     }
   }
 
+  async function handleRepairDates() {
+    setRepairing(true);
+    try {
+      const n = await repairDateFields();
+      showToast('success', `Repaired ${n} record${n === 1 ? '' : 's'}. Date ordering is correct again.`);
+    } catch {
+      showToast('error', 'Could not repair date fields.');
+    } finally {
+      setRepairing(false);
+    }
+  }
+
   async function handleImport() {
     const file = importFileRef.current?.files?.[0];
     if (!file) return;
@@ -157,6 +174,33 @@ export default function Security() {
             </Button>
           </div>
         </SectionCard>
+
+        {/* Data health — only surfaces when there's something to fix */}
+        {!!staleDateRows && (
+          <SectionCard title="Data Health">
+            <div className="mb-4 flex items-start gap-2 text-sm">
+              <CalendarCheck size={16} className="mt-0.5 shrink-0 text-amber-400" />
+              <div className="text-slate-300">
+                <p>
+                  <span className="font-medium text-amber-400">
+                    {staleDateRows} record{staleDateRows === 1 ? '' : 's'}
+                  </span>{' '}
+                  store a date as text rather than a real date. Backups written before Helm
+                  1.2 lost the date type on restore.
+                </p>
+                <p className="mt-1.5 text-slate-400">
+                  Everything still displays correctly, but lists sorted by date — expenses,
+                  time entries, invoices — come out in the wrong order. Repairing rewrites
+                  only the date fields; no other data is touched.
+                </p>
+              </div>
+            </div>
+            <Button type="button" onClick={handleRepairDates} loading={repairing}>
+              <Wrench size={15} />
+              Repair Dates
+            </Button>
+          </SectionCard>
+        )}
 
         {/* Encryption at rest */}
         <SectionCard title="Encryption">

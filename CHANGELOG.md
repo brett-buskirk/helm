@@ -6,6 +6,14 @@ All notable changes to helm are documented here. The format is based on
 
 ## [Unreleased]
 
+### Fixed
+
+- **Dates survive a backup restore** — importing a backup rewrote every date as
+  text (JSON has no date type), and IndexedDB orders keys by type before value,
+  so any list sorted by date came out in the wrong order while still *displaying*
+  correctly. Imports now restore real dates, and **Security → Data Health**
+  offers a one-click repair for a database restored before this fix.
+
 ### Changed
 
 - **Security area** — backup/restore and at-rest encryption moved out of Settings

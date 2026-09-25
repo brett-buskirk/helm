@@ -1,4 +1,5 @@
 import { db } from '../db';
+import { reviveBackupDates } from '../db/dates';
 import { encryptJSON, decryptJSON, isEncryptedBackup } from './crypto';
 
 interface BackupData {
@@ -68,6 +69,12 @@ async function restoreBackup(data: BackupData): Promise<void> {
   if (!data.version || !data.exportedAt) {
     throw new Error('Invalid backup file format.');
   }
+
+  // JSON has no date type, so every Date left this file as an ISO string.
+  // Restore them before writing: IndexedDB orders keys by type before value,
+  // so string dates would sort into their own run and scramble every
+  // `orderBy('date')` list in the app. See db/dates.ts.
+  reviveBackupDates(data as unknown as Record<string, unknown>);
 
   await db.transaction(
     'rw',
